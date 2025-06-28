@@ -1,0 +1,119 @@
+project/.env:
+  依存しているファイル: []
+  依存されているファイル: [project/src/lib/storage.ts, project/src/lib/supabase.ts, project/src/stores/auth.ts]
+
+project/src/lib/storage.ts:
+  依存しているファイル: [project/.env]
+  依存されているファイル: [project/src/stores/auth.ts, project/src/components/common/PostCard.vue, project/src/components/DashboardPage/DashboardCommentsList.vue, project/src/components/DashboardPage/DashboardLikesList.vue, project/src/components/DashboardPage/DashboardStatistics.vue, project/src/pages/PostDetailPage.vue, project/src/components/PostDetailPage/CommentSystem.vue, project/src/pages/PostEditorPage.vue, project/src/components/PostEditorPage/RichTextEditor.vue, project/src/pages/ProfileEditPage.vue, project/src/pages/ProfilePage.vue]
+
+project/src/lib/supabase.ts:
+  依存しているファイル: [project/.env]
+  依存されているファイル: [project/src/stores/auth.ts, project/src/pages/HomePage.vue, project/src/components/DashboardPage/DashboardCommentsList.vue, project/src/components/DashboardPage/DashboardDraftsList.vue, project/src/components/DashboardPage/DashboardLikesList.vue, project/src/components/DashboardPage/DashboardPostsList.vue, project/src/components/DashboardPage/DashboardStatistics.vue, project/src/pages/PostDetailPage.vue, project/src/components/PostDetailPage/CommentSystem.vue, project/src/pages/PostEditorPage.vue, project/src/components/PostEditorPage/RichTextEditor.vue, project/src/pages/PostsPage.vue, project/src/pages/ProfileEditPage.vue, project/src/pages/ProfilePage.vue]
+
+project/src/router/index.ts:
+  依存しているファイル: [project/src/stores/auth.ts, project/src/pages/HomePage.vue, project/src/pages/NotFoundPage.vue, project/src/pages/DashboardPage.vue, project/src/pages/ProfileEditPage.vue, project/src/pages/PostsPage.vue]
+  依存されているファイル: [project/src/main.ts]
+
+project/src/stores/auth.ts:
+  依存しているファイル: [project/src/lib/supabase.ts, project/src/lib/storage.ts, project/.env]
+  依存されているファイル: [project/src/router/index.ts, project/src/App.vue, project/src/components/App/Navbar.vue, project/src/pages/AuthPage.vue, project/src/pages/DashboardPage.vue, project/src/components/DashboardPage/DashboardCommentsList.vue, project/src/components/DashboardPage/DashboardDraftsList.vue, project/src/components/DashboardPage/DashboardLikesList.vue, project/src/components/DashboardPage/DashboardPostsList.vue, project/src/components/DashboardPage/DashboardStatistics.vue, project/src/pages/PostDetailPage.vue, project/src/components/PostDetailPage/CommentSystem.vue, project/src/pages/PostEditorPage.vue, project/src/components/PostEditorPage/RichTextEditor.vue, project/src/pages/ProfileEditPage.vue, project/src/pages/ProfilePage.vue]
+
+project/src/assets/main.css:
+  依存しているファイル: []
+  依存されているファイル: [project/src/main.ts]
+
+project/src/components/App/Footer.vue:
+  依存しているファイル: []
+  依存されているファイル: [project/src/App.vue]
+
+project/src/components/App/Navbar.vue:
+  依存しているファイル: [project/src/stores/auth.ts]
+  依存されているファイル: [project/src/App.vue]
+
+project/src/components/App/Notifications.vue:
+  依存しているファイル: []
+  依存されているファイル: [project/src/App.vue]
+
+project/src/App.vue:
+  依存しているファイル: [project/src/stores/auth.ts, project/src/components/App/Navbar.vue, project/src/components/App/Footer.vue, project/src/components/App/Notifications.vue]
+  依存されているファイル: [project/src/main.ts]
+
+project/src/main.ts:
+  依存しているファイル: [project/src/App.vue, project/src/router/index.ts, project/src/assets/main.css]
+  依存されているファイル: []
+
+project/index.html:
+  依存しているファイル: [project/src/main.ts]
+  依存されているファイル: []
+
+project/src/pages/AuthPage.vue:
+  依存しているファイル: [project/src/stores/auth.ts]
+  依存されているファイル: [project/src/router/index.ts]
+
+project/src/pages/DashboardPage.vue:
+  依存しているファイル: [project/src/stores/auth.ts, project/src/components/DashboardPage/DashboardPostsList.vue, project/src/components/DashboardPage/DashboardDraftsList.vue, project/src/components/DashboardPage/DashboardCommentsList.vue, project/src/components/DashboardPage/DashboardLikesList.vue, project/src/components/DashboardPage/DashboardStatistics.vue]
+  依存されているファイル: [project/src/router/index.ts]
+
+project/src/components/DashboardPage/DashboardCommentsList.vue:
+  依存しているファイル: [project/src/lib/supabase.ts, project/src/stores/auth.ts, project/src/lib/storage.ts]
+  依存されているファイル: [project/src/pages/DashboardPage.vue]
+
+project/src/components/DashboardPage/DashboardDraftsList.vue:
+  依存しているファイル: [project/src/lib/supabase.ts, project/src/stores/auth.ts]
+  依存されているファイル: [project/src/pages/DashboardPage.vue]
+
+project/src/components/DashboardPage/DashboardLikesList.vue:
+  依存しているファイル: [project/src/lib/supabase.ts, project/src/stores/auth.ts, project/src/lib/storage.ts]
+  依存されているファイル: [project/src/pages/DashboardPage.vue]
+
+project/src/components/DashboardPage/DashboardPostsList.vue:
+  依存しているファイル: [project/src/lib/supabase.ts, project/src/stores/auth.ts]
+  依存されているファイル: [project/src/pages/DashboardPage.vue]
+
+project/src/components/DashboardPage/DashboardStatistics.vue:
+  依存しているファイル: [project/src/lib/supabase.ts, project/src/stores/auth.ts, project/src/lib/storage.ts]
+  依存されているファイル: [project/src/pages/DashboardPage.vue]
+
+project/src/pages/HomePage.vue:
+  依存しているファイル: [project/src/lib/supabase.ts, project/src/components/common/PostCard.vue]
+  依存されているファイル: [project/src/router/index.ts]
+
+project/src/components/common/PostCard.vue:
+  依存しているファイル: [project/src/lib/storage.ts]
+  依存されているファイル: [project/src/pages/HomePage.vue, project/src/pages/PostsPage.vue, project/src/pages/ProfilePage.vue]
+
+project/src/pages/NotFoundPage.vue:
+  依存しているファイル: []
+  依存されているファイル: [project/src/router/index.ts]
+
+project/src/pages/PostDetailPage.vue:
+  依存しているファイル: [project/src/lib/supabase.ts, project/src/stores/auth.ts, project/src/components/PostDetailPage/RichTextContent.vue, project/src/components/PostDetailPage/CommentSystem.vue, project/src/lib/storage.ts]
+  依存されているファイル: [project/src/router/index.ts]
+
+project/src/components/PostDetailPage/CommentSystem.vue:
+  依存しているファイル: [project/src/stores/auth.ts, project/src/lib/supabase.ts, project/src/lib/storage.ts]
+  依存されているファイル: [project/src/pages/PostDetailPage.vue]
+
+project/src/components/PostDetailPage/RichTextContent.vue:
+  依存しているファイル: []
+  依存されているファイル: [project/src/pages/PostDetailPage.vue]
+
+project/src/pages/PostEditorPage.vue:
+  依存しているファイル: [project/src/lib/supabase.ts, project/src/stores/auth.ts, project/src/components/PostEditorPage/RichTextEditor.vue, project/src/lib/storage.ts]
+  依存されているファイル: [project/src/router/index.ts]
+
+project/src/components/PostEditorPage/RichTextEditor.vue:
+  依存しているファイル: [project/src/lib/supabase.ts, project/src/stores/auth.ts, project/src/lib/storage.ts]
+  依存されているファイル: [project/src/pages/PostEditorPage.vue]
+
+project/src/pages/PostsPage.vue:
+  依存しているファイル: [project/src/lib/supabase.ts, project/src/components/common/PostCard.vue]
+  依存されているファイル: [project/src/router/index.ts]
+
+project/src/pages/ProfileEditPage.vue:
+  依存しているファイル: [project/src/lib/supabase.ts, project/src/stores/auth.ts, project/src/lib/storage.ts]
+  依存されているファイル: [project/src/router/index.ts]
+
+project/src/pages/ProfilePage.vue:
+  依存しているファイル: [project/src/lib/supabase.ts, project/src/stores/auth.ts, project/src/lib/storage.ts, project/src/components/common/PostCard.vue]
+  依存されているファイル: [] 

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ja" translate="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="google" content="notranslate">
+    <meta http-equiv="Content-Language" content="ja">
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Juna - 見えない障害ブログプラットフォーム</title>
+    <!-- Google Fonts - Noto Sans JP -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+      /* Supabaseフォームを非表示にする最終手段 */
+      .danger-zone form, [data-supabase-form], [data-delete-account-form] {
+        display: none !important;
+        visibility: hidden !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+    <script>
+      // Supabaseフォームを削除するための即時実行関数
+      (function() {
+        // DOMの読み込み完了時に実行
+        document.addEventListener('DOMContentLoaded', function() {
+          // フォーム削除処理
+          function removeSupabaseForms() {
+            const forms = document.querySelectorAll('.danger-zone form');
+            forms.forEach(form => form.remove());
+          }
+          
+          // 初回実行
+          removeSupabaseForms();
+          
+          // 定期的に実行（Supabaseが再挿入する可能性があるため）
+          setInterval(removeSupabaseForms, 1000);
+          
+          // DOM変更の監視
+          const observer = new MutationObserver(function(mutations) {
+            removeSupabaseForms();
+          });
+          
+          // 監視開始
+          observer.observe(document.body, {
+            childList: true,
+            subtree: true
+          });
+        });
+        
+        // スクロール状態をリセットする関数 - 強化版
+        function resetScrollState() {
+          // モーダルやメニューが表示されていないときは強制的にスクロールを有効化
+          if (document.body.style.overflow === 'hidden') {
+            const hasOpenModal = document.querySelector('.fixed.inset-0.z-50');
+            const hasOpenMenu = document.querySelector('#app .fixed.inset-0.z-40');
+            
+            if (!hasOpenModal && !hasOpenMenu) {
+              document.body.style.overflow = '';
+            }
+          }
+        }
+        
+        // ページ読み込み完了時にスクロール状態をリセット
+        window.addEventListener('load', resetScrollState);
+        
+        // より頻繁にスクロール状態をチェック
+        setInterval(resetScrollState, 1000);
+        
+        // URL変更時にもスクロール状態をリセット
+        window.addEventListener('popstate', resetScrollState);
+        
+        // スクロールロックのハック対策 - SPAでの遷移後にも呼び出される
+        window.addEventListener('DOMContentLoaded', function() {
+          setTimeout(resetScrollState, 500);
+          setTimeout(resetScrollState, 1500);
+          setTimeout(resetScrollState, 3000);
+        });
+      })();
+    </script>
+  </body>
+</html>

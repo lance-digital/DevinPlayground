@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "dcraw": "^1.0.3",
+    "heic2any": "^0.0.4"
+  }
+}

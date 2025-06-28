@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Juna依存関係図</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: #e0e0e0;
+    }
+    
+    .container {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+    
+    .links line {
+      stroke: #555;
+      stroke-opacity: 0.6;
+      transition: stroke 0.3s, stroke-opacity 0.3s, stroke-width 0.3s;
+    }
+    
+    .nodes circle {
+      stroke: #222;
+      stroke-width: 1.5px;
+      transition: stroke 0.3s, stroke-width 0.3s, r 0.3s;
+    }
+    
+    .node-label {
+      font-size: 18px;
+      fill: #e0e0e0;
+      pointer-events: none;
+      font-weight: bold;
+      text-shadow: 0 0 3px #000;
+      transition: font-size 0.3s, fill 0.3s;
+    }
+    
+    .tooltip {
+      position: absolute;
+      padding: 8px;
+      background-color: #2a2a2a;
+      color: #e0e0e0;
+      border-radius: 4px;
+      pointer-events: none;
+      font-size: 12px;
+      max-width: 300px;
+      z-index: 10;
+      display: none;
+    }
+    
+    /* トーストメッセージのスタイル追加 */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(33, 33, 33, 0.9);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 4px;
+      font-size: 14px;
+      z-index: 1000;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    .toast.show {
+      opacity: 1;
+    }
+    
+    /* 制御パネルのスタイルを修正 */
+    .control-panel {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(30, 30, 30, 0.9);
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+      z-index: 100;
+      display: flex;
+      flex-direction: row; /* 横並びに変更 */
+      align-items: center; /* 中央揃え */
+      gap: 20px; /* 間隔を広げる */
+      max-width: 800px;
+      width: 90%;
+    }
+    
+    .input-box {
+      background-color: #2a2a2a;
+      border: 1px solid #444;
+      color: #e0e0e0;
+      padding: 8px 12px;
+      border-radius: 4px;
+      width: 300px; /* 幅を固定 */
+      font-size: 14px;
+      flex-shrink: 0; /* サイズ固定 */
+    }
+    
+    .node-types {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-start;
+      flex-grow: 1; /* 残りのスペースを埋める */
+    }
+    
+    .node-type {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+    }
+    
+    .node-type input {
+      cursor: pointer;
+    }
+    
+    .node-type label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      color: #e0e0e0;
+      font-size: 14px;
+    }
+    
+    .node-example {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container"></div>
+  <div class="tooltip"></div>
+  <div class="toast" id="toast"></div>
+  
+  <!-- 制御パネルを修正 -->
+  <div class="control-panel">
+    <input type="text" class="input-box" id="copy-suffix" placeholder="コピー時に追加するテキスト（オプション）">
+    
+    <div class="node-types">
+      <div class="node-type">
+        <label>
+          <input type="checkbox" value="0" checked>
+          <span class="node-example" style="background-color: #FF3131;"></span>
+          HTML/CSS/ENV
+        </label>
+      </div>
+      <div class="node-type">
+        <label>
+          <input type="checkbox" value="1" checked>
+          <span class="node-example" style="background-color: #1E90FF;"></span>
+          TypeScript
+        </label>
+      </div>
+      <div class="node-type">
+        <label>
+          <input type="checkbox" value="2" checked>
+          <span class="node-example" style="background-color: #41EAD4;"></span>
+          Vueページ
+        </label>
+      </div>
+      <div class="node-type">
+        <label>
+          <input type="checkbox" value="3" checked>
+          <span class="node-example" style="background-color: #42B883;"></span>
+          Vueコンポーネント
+        </label>
+      </div>
+      <div class="node-type">
+        <label>
+          <input type="checkbox" value="4" checked>
+          <span class="node-example" style="background-color: #FFFC00;"></span>
+          その他
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 依存関係データ
+    const dependencyData = {
+      "project/.env": {
+        "依存しているファイル": [],
+        "依存されているファイル": ["project/src/lib/storage.ts", "project/src/lib/supabase.ts", "project/src/stores/auth.ts"]
+      },
+      "project/src/lib/storage.ts": {
+        "依存しているファイル": ["project/.env"],
+        "依存されているファイル": ["project/src/stores/auth.ts", "project/src/components/common/PostCard.vue", "project/src/components/DashboardPage/DashboardCommentsList.vue", "project/src/components/DashboardPage/DashboardLikesList.vue", "project/src/components/DashboardPage/DashboardStatistics.vue", "project/src/pages/PostDetailPage.vue", "project/src/components/PostDetailPage/CommentSystem.vue", "project/src/pages/PostEditorPage.vue", "project/src/components/PostEditorPage/RichTextEditor.vue", "project/src/pages/ProfileEditPage.vue", "project/src/pages/ProfilePage.vue"]
+      },
+      "project/src/lib/supabase.ts": {
+        "依存しているファイル": ["project/.env"],
+        "依存されているファイル": ["project/src/stores/auth.ts", "project/src/pages/HomePage.vue", "project/src/components/DashboardPage/DashboardCommentsList.vue", "project/src/components/DashboardPage/DashboardDraftsList.vue", "project/src/components/DashboardPage/DashboardLikesList.vue", "project/src/components/DashboardPage/DashboardPostsList.vue", "project/src/components/DashboardPage/DashboardStatistics.vue", "project/src/pages/PostDetailPage.vue", "project/src/components/PostDetailPage/CommentSystem.vue", "project/src/pages/PostEditorPage.vue", "project/src/components/PostEditorPage/RichTextEditor.vue", "project/src/pages/PostsPage.vue", "project/src/pages/ProfileEditPage.vue", "project/src/pages/ProfilePage.vue"]
+      },
+      "project/src/router/index.ts": {
+        "依存しているファイル": ["project/src/stores/auth.ts", "project/src/pages/HomePage.vue", "project/src/pages/NotFoundPage.vue", "project/src/pages/DashboardPage.vue", "project/src/pages/ProfileEditPage.vue", "project/src/pages/PostsPage.vue"],
+        "依存されているファイル": ["project/src/main.ts"]
+      },
+      "project/src/stores/auth.ts": {
+        "依存しているファイル": ["project/src/lib/supabase.ts", "project/src/lib/storage.ts", "project/.env"],
+        "依存されているファイル": ["project/src/router/index.ts", "project/src/App.vue", "project/src/components/App/Navbar.vue", "project/src/pages/AuthPage.vue", "project/src/pages/DashboardPage.vue", "project/src/components/DashboardPage/DashboardCommentsList.vue", "project/src/components/DashboardPage/DashboardDraftsList.vue", "project/src/components/DashboardPage/DashboardLikesList.vue", "project/src/components/DashboardPage/DashboardPostsList.vue", "project/src/components/DashboardPage/DashboardStatistics.vue", "project/src/pages/PostDetailPage.vue", "project/src/components/PostDetailPage/CommentSystem.vue", "project/src/pages/PostEditorPage.vue", "project/src/components/PostEditorPage/RichTextEditor.vue", "project/src/pages/ProfileEditPage.vue", "project/src/pages/ProfilePage.vue"]
+      },
+      "project/src/assets/main.css": {
+        "依存しているファイル": [],
+        "依存されているファイル": ["project/src/main.ts"]
+      },
+      "project/src/components/App/Footer.vue": {
+        "依存しているファイル": [],
+        "依存されているファイル": ["project/src/App.vue"]
+      },
+      "project/src/components/App/Navbar.vue": {
+        "依存しているファイル": ["project/src/stores/auth.ts"],
+        "依存されているファイル": ["project/src/App.vue"]
+      },
+      "project/src/components/App/Notifications.vue": {
+        "依存しているファイル": [],
+        "依存されているファイル": ["project/src/App.vue"]
+      },
+      "project/src/App.vue": {
+        "依存しているファイル": ["project/src/stores/auth.ts", "project/src/components/App/Navbar.vue", "project/src/components/App/Footer.vue", "project/src/components/App/Notifications.vue"],
+        "依存されているファイル": ["project/src/main.ts"]
+      },
+      "project/src/main.ts": {
+        "依存しているファイル": ["project/src/App.vue", "project/src/router/index.ts", "project/src/assets/main.css"],
+        "依存されているファイル": []
+      },
+      "project/index.html": {
+        "依存しているファイル": ["project/src/main.ts"],
+        "依存されているファイル": []
+      },
+      "project/src/pages/AuthPage.vue": {
+        "依存しているファイル": ["project/src/stores/auth.ts"],
+        "依存されているファイル": ["project/src/router/index.ts"]
+      },
+      "project/src/pages/DashboardPage.vue": {
+        "依存しているファイル": ["project/src/stores/auth.ts", "project/src/components/DashboardPage/DashboardPostsList.vue", "project/src/components/DashboardPage/DashboardDraftsList.vue", "project/src/components/DashboardPage/DashboardCommentsList.vue", "project/src/components/DashboardPage/DashboardLikesList.vue", "project/src/components/DashboardPage/DashboardStatistics.vue"],
+        "依存されているファイル": ["project/src/router/index.ts"]
+      },
+      "project/src/components/DashboardPage/DashboardCommentsList.vue": {
+        "依存しているファイル": ["project/src/lib/supabase.ts", "project/src/stores/auth.ts", "project/src/lib/storage.ts"],
+        "依存されているファイル": ["project/src/pages/DashboardPage.vue"]
+      },
+      "project/src/components/DashboardPage/DashboardDraftsList.vue": {
+        "依存しているファイル": ["project/src/lib/supabase.ts", "project/src/stores/auth.ts"],
+        "依存されているファイル": ["project/src/pages/DashboardPage.vue"]
+      },
+      "project/src/components/DashboardPage/DashboardLikesList.vue": {
+        "依存しているファイル": ["project/src/lib/supabase.ts", "project/src/stores/auth.ts", "project/src/lib/storage.ts"],
+        "依存されているファイル": ["project/src/pages/DashboardPage.vue"]
+      },
+      "project/src/components/DashboardPage/DashboardPostsList.vue": {
+        "依存しているファイル": ["project/src/lib/supabase.ts", "project/src/stores/auth.ts"],
+        "依存されているファイル": ["project/src/pages/DashboardPage.vue"]
+      },
+      "project/src/components/DashboardPage/DashboardStatistics.vue": {
+        "依存しているファイル": ["project/src/lib/supabase.ts", "project/src/stores/auth.ts", "project/src/lib/storage.ts"],
+        "依存されているファイル": ["project/src/pages/DashboardPage.vue"]
+      },
+      "project/src/pages/HomePage.vue": {
+        "依存しているファイル": ["project/src/lib/supabase.ts", "project/src/components/common/PostCard.vue"],
+        "依存されているファイル": ["project/src/router/index.ts"]
+      },
+      "project/src/components/common/PostCard.vue": {
+        "依存しているファイル": ["project/src/lib/storage.ts"],
+        "依存されているファイル": ["project/src/pages/HomePage.vue", "project/src/pages/PostsPage.vue", "project/src/pages/ProfilePage.vue"]
+      },
+      "project/src/pages/NotFoundPage.vue": {
+        "依存しているファイル": [],
+        "依存されているファイル": ["project/src/router/index.ts"]
+      },
+      "project/src/pages/PostDetailPage.vue": {
+        "依存しているファイル": ["project/src/lib/supabase.ts", "project/src/stores/auth.ts", "project/src/components/PostDetailPage/RichTextContent.vue", "project/src/components/PostDetailPage/CommentSystem.vue", "project/src/lib/storage.ts"],
+        "依存されているファイル": ["project/src/router/index.ts"]
+      },
+      "project/src/components/PostDetailPage/CommentSystem.vue": {
+        "依存しているファイル": ["project/src/stores/auth.ts", "project/src/lib/supabase.ts", "project/src/lib/storage.ts"],
+        "依存されているファイル": ["project/src/pages/PostDetailPage.vue"]
+      },
+      "project/src/components/PostDetailPage/RichTextContent.vue": {
+        "依存しているファイル": [],
+        "依存されているファイル": ["project/src/pages/PostDetailPage.vue"]
+      },
+      "project/src/pages/PostEditorPage.vue": {
+        "依存しているファイル": ["project/src/lib/supabase.ts", "project/src/stores/auth.ts", "project/src/components/PostEditorPage/RichTextEditor.vue", "project/src/lib/storage.ts"],
+        "依存されているファイル": ["project/src/router/index.ts"]
+      },
+      "project/src/components/PostEditorPage/RichTextEditor.vue": {
+        "依存しているファイル": ["project/src/lib/supabase.ts", "project/src/stores/auth.ts", "project/src/lib/storage.ts"],
+        "依存されているファイル": ["project/src/pages/PostEditorPage.vue"]
+      },
+      "project/src/pages/PostsPage.vue": {
+        "依存しているファイル": ["project/src/lib/supabase.ts", "project/src/components/common/PostCard.vue"],
+        "依存されているファイル": ["project/src/router/index.ts"]
+      },
+      "project/src/pages/ProfileEditPage.vue": {
+        "依存しているファイル": ["project/src/lib/supabase.ts", "project/src/stores/auth.ts", "project/src/lib/storage.ts"],
+        "依存されているファイル": ["project/src/router/index.ts"]
+      },
+      "project/src/pages/ProfilePage.vue": {
+        "依存しているファイル": ["project/src/lib/supabase.ts", "project/src/stores/auth.ts", "project/src/lib/storage.ts", "project/src/components/common/PostCard.vue"],
+        "依存されているファイル": []
+      }
+    };
+
+    // ノードとリンクのデータを生成
+    const nodes = [];
+    const links = [];
+    const filePathMap = {};
+
+    // ファイルの種類によるグループとカラーの設定
+    function getFileGroup(filePath) {
+      if (filePath.endsWith('.html') || filePath.endsWith('.css') || filePath.endsWith('.env')) {
+        return 0; // html, css, env グループ
+      } else if (filePath.endsWith('.ts')) {
+        return 1; // ts グループ
+      } else if (filePath.endsWith('.vue') && filePath.includes('/pages/')) {
+        return 2; // vueページコンポーネント グループ
+      } else if (filePath.endsWith('.vue')) {
+        return 3; // vueコンポーネント グループ
+      }
+      return 4; // その他
+    }
+
+    // ファイルの種類によるネオン系のカラー設定
+    function getFileColor(filePath) {
+      if (filePath.endsWith('.html')) {
+        return '#FF3131'; // ネオン系の赤色 (HTML)
+      } else if (filePath.endsWith('.css')) {
+        return '#BF00FF'; // ネオン系の紫 (CSS)
+      } else if (filePath.endsWith('.env')) {
+        return '#C0C0FF'; // ネオン系の灰色 (ENV)
+      } else if (filePath.endsWith('.ts')) {
+        return '#1E90FF'; // ネオンブルー (TypeScript)
+      } else if (filePath.endsWith('.vue') && filePath.includes('/pages/')) {
+        return '#41EAD4'; // ネオンターコイズ (Vueページ)
+      } else if (filePath.endsWith('.vue')) {
+        return '#42B883'; // Vueグリーン (Vueコンポーネント)
+      }
+      return '#FFFC00'; // ネオンイエロー (その他)
+    }
+
+    // ファイル名だけを取得
+    function getFileName(filePath) {
+      return filePath.split('/').pop();
+    }
+
+    // ノードの作成
+    let index = 0;
+    for (const filePath in dependencyData) {
+      filePathMap[filePath] = index;
+      nodes.push({
+        id: index++,
+        name: getFileName(filePath),
+        filePath: filePath,
+        group: getFileGroup(filePath),
+        color: getFileColor(filePath),
+        dependsOn: dependencyData[filePath]["依存しているファイル"],
+        dependedBy: dependencyData[filePath]["依存されているファイル"]
+      });
+    }
+
+    // リンクの作成
+    for (const filePath in dependencyData) {
+      const sourceId = filePathMap[filePath];
+      dependencyData[filePath]["依存しているファイル"].forEach(targetPath => {
+        if (filePathMap[targetPath] !== undefined) {
+          links.push({
+            source: sourceId,
+            target: filePathMap[targetPath],
+            value: 1
+          });
+        }
+      });
+    }
+
+    // D3.jsグラフ描画
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    
+    const svg = d3.select('.container')
+      .append('svg')
+      .attr('width', width)
+      .attr('height', height);
+    
+    // 矢印の定義
+    svg.append('defs').append('marker')
+      .attr('id', 'arrowhead')
+      .attr('viewBox', '-0 -5 10 10')
+      .attr('refX', 30)
+      .attr('refY', 0)
+      .attr('orient', 'auto')
+      .attr('markerWidth', 6)
+      .attr('markerHeight', 6)
+      .attr('xoverflow', 'visible')
+      .append('svg:path')
+      .attr('d', 'M 0,-5 L 10 ,0 L 0,5')
+      .attr('fill', '#555')
+      .style('stroke', 'none');
+    
+    const tooltip = d3.select('.tooltip');
+    
+    // リンクとノードのグループを作成
+    const container = svg.append('g');
+    
+    const link = container.append('g')
+      .attr('class', 'links')
+      .selectAll('line')
+      .data(links)
+      .enter().append('line')
+      .attr('stroke-width', d => Math.sqrt(d.value))
+      .attr('marker-end', 'url(#arrowhead)');
+    
+    const node = container.append('g')
+      .attr('class', 'nodes')
+      .selectAll('g')
+      .data(nodes)
+      .enter().append('g');
+    
+    const circles = node.append('circle')
+      .attr('r', 12)
+      .attr('fill', d => d.color)
+      .call(d3.drag()
+        .on('start', dragstarted)
+        .on('drag', dragged)
+        .on('end', dragended));
+    
+    // ノードの初期位置を設定する前に、最長のファイル名を取得して右マージンを計算
+    // テキストの長さを測定する関数
+    function getTextWidth(text, fontSize) {
+      // 一文字あたりの平均幅を推定（フォントによって異なる）
+      const avgCharWidth = fontSize * 0.6;
+      return text.length * avgCharWidth;
+    }
+
+    // 最長のファイル名とその長さを計算
+    let maxLabelWidth = 0;
+    let longestLabel = '';
+    nodes.forEach(node => {
+      const labelWidth = getTextWidth(node.name, 18);
+      if (labelWidth > maxLabelWidth) {
+        maxLabelWidth = labelWidth;
+        longestLabel = node.name;
+      }
+    });
+
+    // 右側マージンに最長ラベル幅 + 余白を追加
+    const baseMargin = width * 0.05; // 基本マージン
+    const rightMargin = baseMargin + maxLabelWidth + 20; // 右側は長いラベルに対応
+
+    // グループごとのノード配列を作成
+    const groupedNodes = {};
+    nodes.forEach(node => {
+      if (!groupedNodes[node.group]) {
+        groupedNodes[node.group] = [];
+      }
+      groupedNodes[node.group].push(node);
+    });
+
+    // グループ情報を収集してレイアウトを最適化
+    function optimizeLayout() {
+      // グループ情報の収集
+      const groupInfo = {};
+      
+      // 各グループについての情報を収集（ノード数、最長ラベル長など）
+      Object.keys(groupedNodes).forEach(group => {
+        const nodes = groupedNodes[group];
+        
+        // このグループの最長ラベルを見つける
+        let maxLabelWidth = 0;
+        let longestLabel = '';
+        nodes.forEach(node => {
+          const labelWidth = getTextWidth(node.name, 18);
+          if (labelWidth > maxLabelWidth) {
+            maxLabelWidth = labelWidth;
+            longestLabel = node.name;
+          }
+        });
+        
+        groupInfo[group] = {
+          count: nodes.length,
+          maxLabelWidth: maxLabelWidth,
+          longestLabel: longestLabel
+        };
+      });
+
+      // 画面のサイズとグループ数に基づいて、利用可能な領域を計算
+      const totalGroups = Object.keys(groupedNodes).length;
+      const screenMargin = width * 0.05;
+      const availableWidth = width - (screenMargin * 2);
+      const availableHeight = height - (height * 0.1 * 2);
+      
+      // 各グループに割り当てる幅を計算（ラベルの長さに基づいて重み付け）
+      let totalLabelWidth = 0;
+      Object.values(groupInfo).forEach(info => {
+        totalLabelWidth += info.maxLabelWidth;
+      });
+      
+      // 各グループの位置を計算
+      let currentX = screenMargin;
+      Object.keys(groupedNodes).sort((a, b) => a - b).forEach(group => {
+        const nodes = groupedNodes[group];
+        const info = groupInfo[group];
+        
+        // このグループの幅の割合を計算（ラベルの長さに基づく）
+        // 最小幅を保証するためのロジックを追加
+        const minGroupWidth = 100; // 最小グループ幅
+        const widthRatio = Math.max(info.maxLabelWidth / totalLabelWidth, 0.1);
+        const groupWidth = Math.max(availableWidth * widthRatio, minGroupWidth);
+        
+        // グループの中心X座標
+        const groupCenterX = currentX + (groupWidth / 2);
+        
+        // このグループ内の各ノードのY座標を計算
+        const nodeCount = nodes.length;
+        const nodeSpacing = nodeCount <= 1 ? 0 : availableHeight / (nodeCount - 1);
+        const startY = height * 0.1;
+        
+        // ノードの位置を設定
+        nodes.forEach((node, idx) => {
+          node.fx = groupCenterX;
+          node.fy = startY + (idx * nodeSpacing);
+          
+          // ノードのラベル位置を設定（右側に表示）
+          node.labelPosition = 'right';
+        });
+        
+        // 次のグループのX座標を更新
+        currentX += groupWidth;
+      });
+    }
+
+    // レイアウト最適化を実行
+    optimizeLayout();
+
+    // ラベルの追加
+    const labels = node.append('text')
+      .attr('class', 'node-label')
+      .attr('dx', d => d.labelPosition === 'left' ? -16 : 16)
+      .attr('dy', '.35em')
+      .attr('text-anchor', d => d.labelPosition === 'left' ? 'end' : 'start')
+      .text(d => d.name);
+
+    // ウィンドウリサイズ時にレイアウトを再計算
+    window.addEventListener('resize', () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      
+      svg.attr('width', width)
+         .attr('height', height);
+         
+      // レイアウトを再計算して適用
+      optimizeLayout();
+      
+      // シミュレーションを再開して新しい位置に移動
+      simulation.alpha(0.3).restart();
+    });
+
+    // 力学シミュレーションの設定（最小限の力のみ）
+    const simulation = d3.forceSimulation(nodes)
+      .force('link', d3.forceLink(links).id(d => d.id).strength(0.05)) // リンクの力を弱める
+      .force('charge', d3.forceManyBody().strength(-10)) // 反発力を最小限に
+      .alphaDecay(0.1) // シミュレーションの収束を速める
+      .alpha(0.3); // 初期アルファ値
+
+    // トーストメッセージを表示する関数
+    function showToast(message, duration = 2000) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, duration);
+    }
+    
+    // クリップボードにコピーする関数を修正
+    function copyToClipboard(text) {
+      // チェックされたファイルタイプを取得
+      const checkedTypes = Array.from(document.querySelectorAll('.node-type input:checked'))
+        .map(checkbox => parseInt(checkbox.value));
+      
+      // サフィックスを取得
+      const suffix = document.getElementById('copy-suffix').value.trim();
+      
+      // ファイルタイプでフィルタリングされたテキスト
+      let filteredText = text;
+      
+      // 元のテキストを解析して、チェックされたタイプのみを含める
+      if (text.startsWith('@')) {
+        const parts = text.split(' ');
+        const mainNode = parts[0]; // メインノードは常に含める
+        
+        // メインノード以外の部分をフィルタリング
+        const filteredParts = parts.filter((part, index) => {
+          if (index === 0) return true; // メインノードは常に含める
+          
+          // 対応するノードを見つける
+          const nodeName = part.substring(1); // @を除去
+          const node = nodes.find(n => n.name === nodeName);
+          
+          // ノードが見つからない場合やチェックされたタイプでない場合は除外
+          return node && checkedTypes.includes(node.group);
+        });
+        
+        filteredText = filteredParts.join(' ');
+      }
+      
+      // サフィックスを追加
+      if (suffix) {
+        const textWithoutNewline = filteredText.replace(/\n$/, '');
+        filteredText = textWithoutNewline + ' ' + suffix + '\n';
+      }
+      
+      navigator.clipboard.writeText(filteredText)
+        .then(() => {
+          showToast('クリップボードにコピーしました');
+        })
+        .catch(err => {
+          console.error('クリップボードへのコピーに失敗しました', err);
+          showToast('コピーに失敗しました');
+        });
+    }
+
+    // ノードにマウスオーバーした時のハイライト機能
+    node.on('mouseover', function(event, d) {
+      // ツールチップ表示
+      tooltip.style('display', 'block')
+        .html(`<strong>${d.filePath}</strong><br>
+               依存: ${d.dependsOn.length} ファイル<br>
+               被依存: ${d.dependedBy.length} ファイル`)
+        .style('left', (event.pageX + 10) + 'px')
+        .style('top', (event.pageY - 10) + 'px');
+      
+      // 関連リンクとノードの強調表示
+      const linkedNodeIds = new Set();
+      
+      // このノードが依存するノードと依存されるノードのIDを収集
+      link.each(function(l) {
+        if (l.source.id === d.id) {
+          linkedNodeIds.add(l.target.id);
+        } else if (l.target.id === d.id) {
+          linkedNodeIds.add(l.source.id);
+        }
+      });
+      
+      // リンクの強調表示
+      link.style('stroke-opacity', function(l) {
+        if (l.source.id === d.id || l.target.id === d.id) {
+          return 1;
+        } else {
+          return 0.1;
+        }
+      })
+      .style('stroke', function(l) {
+        if (l.source.id === d.id || l.target.id === d.id) {
+          return '#00FFFF'; // ネオンシアン色に変更
+        } else {
+          return '#555';
+        }
+      })
+      .style('stroke-width', function(l) {
+        if (l.source.id === d.id || l.target.id === d.id) {
+          return 3; // 線を太く
+        } else {
+          return Math.sqrt(l.value);
+        }
+      });
+      
+      // ノードの強調表示
+      circles.style('stroke', function(n) {
+        if (n.id === d.id) {
+          return '#FFFFFF'; // 白色の縁取り
+        } else if (linkedNodeIds.has(n.id)) {
+          return '#00FFFF'; // 関連ノードはネオンシアン
+        } else {
+          return '#222';
+        }
+      })
+      .style('stroke-width', function(n) {
+        if (n.id === d.id || linkedNodeIds.has(n.id)) {
+          return 4; // 縁取りを太く
+        } else {
+          return 1.5;
+        }
+      });
+      
+      // ラベルの強調表示
+      labels.style('font-size', function(n) {
+        if (n.id === d.id || linkedNodeIds.has(n.id)) {
+          return '20px';
+        } else {
+          return '18px';
+        }
+      })
+      .style('fill', function(n) {
+        if (n.id === d.id) {
+          return '#fff';
+        } else if (linkedNodeIds.has(n.id)) {
+          return '#fff';
+        } else {
+          return '#999';
+        }
+      });
+    })
+    .on('mouseout', function() {
+      // ツールチップを非表示
+      tooltip.style('display', 'none');
+      
+      // リンクを元に戻す
+      link.style('stroke-opacity', 0.6)
+          .style('stroke', '#555')
+          .style('stroke-width', d => Math.sqrt(d.value));
+      
+      // ノードを元に戻す
+      circles.style('stroke', '#222')
+             .style('stroke-width', 1.5);
+      
+      // ラベルを元に戻す
+      labels.style('font-size', '18px')
+            .style('fill', '#e0e0e0');
+    })
+    .on('dblclick', function(event, d) {
+      // ダブルクリックイベントがズームに伝播しないように防止
+      event.stopPropagation();
+      event.preventDefault();
+      
+      // ファイル名のみを取得する関数
+      function getFileNameOnly(path) {
+        return path.split('/').pop();
+      }
+      
+      // コピーする文字列を作成
+      let copyText = `@${d.name} `;
+      
+      // 依存しているファイル名をコピー
+      d.dependsOn.forEach(filePath => {
+        copyText += `@${getFileNameOnly(filePath)} `;
+      });
+      
+      // 依存されているファイル名をコピー
+      d.dependedBy.forEach(filePath => {
+        copyText += `@${getFileNameOnly(filePath)} `;
+      });
+      
+      // 末尾に改行を追加
+      copyText += '\n';
+      
+      // クリップボードにコピー（修正したメソッドを使用）
+      copyToClipboard(copyText);
+    });
+
+    // ズーム機能を追加
+    const zoom = d3.zoom()
+      .scaleExtent([0.1, 10])
+      .on('zoom', (event) => {
+        container.attr('transform', event.transform);
+      });
+    
+    svg.call(zoom);
+    
+    // シミュレーションの更新
+    simulation.on('tick', () => {
+      link
+        .attr('x1', d => d.source.x)
+        .attr('y1', d => d.source.y)
+        .attr('x2', d => d.target.x)
+        .attr('y2', d => d.target.y);
+      
+      node.attr('transform', d => `translate(${d.x}, ${d.y})`);
+    });
+    
+    // ドラッグ機能を修正して位置を固定
+    function dragstarted(event, d) {
+      if (!event.active) simulation.alphaTarget(0).restart();
+    }
+    
+    function dragged(event, d) {
+      d.fx = event.x;
+      d.fy = event.y;
+    }
+    
+    function dragended(event, d) {
+      if (!event.active) simulation.alphaTarget(0);
+      // ドラッグ終了後も位置を固定したままにする
+      // d.fx = null;
+      // d.fy = null;
+    }
+  </script>
+</body>
+</html>

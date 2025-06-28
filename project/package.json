@@ -7,7 +7,7 @@
     "type": "git",
     "url": "git+https://github.com/imuradevelopment/Juna_supabase.git"
   },
-  "homepage": "https://juna-supabase.netlify.app",
+  "homepage": "https://juna-supabase2.netlify.app",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",

@@ -70,6 +70,13 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     
+    {
+      path: '/admin',
+      name: 'admin',
+      component: () => import('../pages/AdminPage.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    
     // 404ページ
     {
       path: '/:pathMatch(.*)*',
@@ -104,6 +111,9 @@ router.beforeEach((to, _, next) => {
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     next({ path: '/auth', query: { redirect: to.fullPath } });
   } 
+  else if (to.meta.requiresAdmin && !authStore.isAdmin) {
+    next({ name: 'home' });
+  }
   else if (to.meta.requiresGuest && authStore.isAuthenticated) {
     next({ name: 'home' });
   } 
@@ -112,4 +122,4 @@ router.beforeEach((to, _, next) => {
   }
 });
 
-export default router; 
+export default router;  

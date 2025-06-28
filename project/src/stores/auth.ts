@@ -11,6 +11,7 @@ type Profile = {
   nickname: string | null;
   bio: string | null;
   avatar_data: string | null;
+  is_admin: boolean | null;
   created_at: string;
   updated_at: string;
 };
@@ -26,6 +27,7 @@ export const useAuthStore = defineStore('auth', () => {
   
   // 計算プロパティ
   const isAuthenticated = computed(() => !!user.value);
+  const isAdmin = computed(() => !!profile.value?.is_admin);
   const displayName = computed(() => {
     return profile.value?.nickname || user.value?.email || 'ユーザー';
   });
@@ -291,7 +293,7 @@ export const useAuthStore = defineStore('auth', () => {
       if (!user.value) throw new Error('ユーザーが認証されていません');
       
       // スキーマに存在しないフィールドを削除
-      const validFields = ['nickname', 'bio', 'avatar_data', 'account_id'];
+      const validFields = ['nickname', 'bio', 'avatar_data', 'account_id', 'is_admin'];
       Object.keys(profileData).forEach(key => {
         if (!validFields.includes(key)) {
           delete profileData[key];
@@ -382,6 +384,7 @@ export const useAuthStore = defineStore('auth', () => {
     
     // 計算プロパティ
     isAuthenticated,
+    isAdmin,
     displayName,
     avatarUrl,
     
@@ -397,4 +400,4 @@ export const useAuthStore = defineStore('auth', () => {
     clearUser,
     refreshSession
   };
-}); 
+});  

@@ -2,7 +2,7 @@
 
 ## デプロイ情報
 - [Netlify管理パネル](https://app.netlify.com/sites/juna-supabase/overview)
-- [デプロイされたサイト](https://juna-supabase.netlify.app/)
+- [デプロイされたサイト](https://juna-supabase2.netlify.app/)
 
 ## 依存関係をインストール
 ```bash

@@ -35,7 +35,7 @@ test.describe('ログインユニット', () => {
     await expect(submitButton).toHaveText(/.+/, { timeout: 3000 })
   })
 
-  test('有効な認証情報でログインを試行するとパスワードエラーが表示される', async ({ page }) => {
+  test('有効な認証情報でログインすると投稿一覧ページに遷移する', async ({ page }) => {
     await page.waitForFunction(() => {
       const identifierInput = document.querySelector('[data-testid="ログイン-識別子入力"]')
       return identifierInput && !identifierInput.hasAttribute('disabled')
@@ -47,12 +47,16 @@ test.describe('ログインユニット', () => {
     await page.getByTestId('ログイン-送信ボタン').click()
 
     await page.waitForFunction(() => {
-      const errorMessage = document.querySelector('[data-testid="ログイン-エラーメッセージ"]')
-      return errorMessage !== null
+      return window.location.pathname === '/posts'
     }, undefined, { timeout: 10000 })
 
-    const errorMessage = page.getByTestId('ログイン-エラーメッセージ')
-    await expect(errorMessage).toHaveText(/.+/, { timeout: 3000 })
+    await page.waitForFunction(() => {
+      const title = document.querySelector('[data-testid="投稿一覧-タイトル"]')
+      return title !== null
+    }, undefined, { timeout: 5000 })
+
+    const title = page.getByTestId('投稿一覧-タイトル')
+    await expect(title).toHaveText(/.+/, { timeout: 3000 })
   })
 
   test('無効な情報でエラーメッセージが表示される', async ({ page }) => {

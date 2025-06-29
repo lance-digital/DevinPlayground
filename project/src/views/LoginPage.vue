@@ -99,6 +99,7 @@ const handleSubmit = async () => {
   } catch (error) {
     console.error('Login error:', error instanceof Error ? error.stack : error)
     errorMessage.value = error instanceof Error ? error.message : 'ログインに失敗しました'
+    console.log('Error message set to:', errorMessage.value)
   }
 }
 </script>

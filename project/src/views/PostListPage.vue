@@ -163,11 +163,6 @@ import type { Database } from '@/lib/supabase'
 // 投稿検索機能のコンポーザブルをインポート
 import { usePostSearch } from '@/composables/usePostSearch'
 
-// 投稿の型定義（プロフィールとカテゴリ情報を含む）
-type Post = Database['public']['Tables']['posts']['Row'] & {
-  profiles?: Database['public']['Tables']['profiles']['Row']
-  categories?: Database['public']['Tables']['categories']['Row'][]
-}
 
 // カテゴリの型定義
 type Category = Database['public']['Tables']['categories']['Row']
@@ -176,7 +171,7 @@ type Category = Database['public']['Tables']['categories']['Row']
 const router = useRouter()
 
 // 投稿検索機能を取得
-const { posts: searchPosts, loading, errorMessage, searchPosts: performSearch } = usePostSearch()
+const { posts: searchPosts, loading, searchPosts: searchFunction } = usePostSearch()
 
 // カテゴリ一覧のリアクティブ配列
 const categories = ref<Category[]>([])
@@ -189,7 +184,7 @@ const sortBy = ref('newest')
 
 // フィルタを適用する関数
 const applyFilters = async () => {
-  await performSearch(searchQuery.value, selectedCategory.value, sortBy.value)
+  await searchFunction(searchQuery.value, selectedCategory.value, sortBy.value)
 }
 
 // カテゴリ一覧を読み込む非同期関数
@@ -216,11 +211,6 @@ const navigateToPost = (postId: number) => {
   router.push(`/posts/${postId}`)
 }
 
-// 画像のパブリックURLを取得する関数
-const getImageUrl = (path: string) => {
-  const { data } = supabase.storage.from('post_images').getPublicUrl(path)
-  return data.publicUrl
-}
 
 // 日付文字列を日本語形式でフォーマットする関数
 const formatDate = (dateString: string) => {

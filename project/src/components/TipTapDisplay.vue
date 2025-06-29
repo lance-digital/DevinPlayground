@@ -1,6 +1,6 @@
 <template>
   <div class="prose prose-invert max-w-none">
-    <editor-content :editor="editor" />
+    <editor-content v-if="editor" :editor="(editor as any)" />
   </div>
 </template>
 

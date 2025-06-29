@@ -42,14 +42,14 @@
       />
       <button
         type="button"
-        @click="() => $refs.imageInput?.click()"
+        @click="() => imageInput?.click()"
         class="px-3 py-1 bg-muted hover:bg-muted-foreground/10 rounded text-sm border border-border"
       >
         画像
       </button>
     </div>
     <div :data-testid="testId">
-      <editor-content :editor="editor" />
+      <editor-content v-if="editor" :editor="(editor as any)" />
     </div>
   </div>
 </template>

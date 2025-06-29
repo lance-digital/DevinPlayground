@@ -13,6 +13,8 @@ app.use(pinia)
 app.use(router)
 
 const { initAuth } = useAuth()
-await initAuth()
 
-app.mount('#app')     
+;(async () => {
+  await initAuth()
+  app.mount('#app')
+})()        

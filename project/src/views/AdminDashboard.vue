@@ -266,10 +266,6 @@ const allPosts = ref<Post[]>([])
 const filteredPosts = ref<Post[]>([])
 // 最近の投稿一覧のリアクティブ状態（最新5件）
 const recentPosts = ref<Post[]>([])
-// ユーザー検索クエリのリアクティブ状態
-const userSearchQuery = ref('')
-// 投稿検索クエリのリアクティブ状態
-const postSearchQuery = ref('')
 // 削除中のユーザーIDリストのリアクティブ状態
 const deletingUsers = ref<string[]>([])
 // 削除中の投稿IDリストのリアクティブ状態
@@ -359,33 +355,7 @@ const loadAllPosts = async () => {
   }
 }
 
-// ユーザー検索を実行する関数
-const searchUsers = () => {
-  if (!userSearchQuery.value.trim()) {
-    filteredUsers.value = allUsers.value
-    return
-  }
-  
-  const query = userSearchQuery.value.toLowerCase()
-  filteredUsers.value = allUsers.value.filter(user => 
-    user.nickname?.toLowerCase().includes(query) ||
-    user.account_id?.toLowerCase().includes(query)
-  )
-}
 
-// 投稿検索を実行する関数
-const searchPosts = () => {
-  if (!postSearchQuery.value.trim()) {
-    filteredPosts.value = allPosts.value
-    return
-  }
-  
-  const query = postSearchQuery.value.toLowerCase()
-  filteredPosts.value = allPosts.value.filter(post => 
-    post.title?.toLowerCase().includes(query) ||
-    post.profiles?.nickname?.toLowerCase().includes(query)
-  )
-}
 
 // ユーザーを削除する非同期関数
 const deleteUser = async (userId: string) => {

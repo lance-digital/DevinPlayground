@@ -21,8 +21,8 @@
             <!-- アバター表示（プロフィール画像またはニックネームの頭文字） -->
             <div class="w-20 h-20 bg-surface-accent rounded-full flex items-center justify-center overflow-hidden">
               <img 
-                v-if="profile?.avatar_url" 
-                :src="profile.avatar_url" 
+                v-if="profile?.avatar_data" 
+                :src="profile.avatar_data" 
                 :alt="profile.nickname"
                 class="w-full h-full object-cover"
               />
@@ -110,6 +110,7 @@
               id="nickname"
               data-testid="プロフィール管理-ニックネーム入力"
               v-model="editForm.nickname"
+              @input="draftData.nickname = editForm.nickname"
               type="text"
               required
               maxlength="30"
@@ -128,6 +129,7 @@
               id="bio"
               data-testid="プロフィール管理-自己紹介入力"
               v-model="editForm.bio"
+              @input="draftData.bio = editForm.bio"
               rows="4"
               maxlength="500"
               class="w-full px-3 py-2 bg-surface-variant border border-border rounded-md text-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -181,19 +183,18 @@
 </template>
 
 <script setup lang="ts">
-// Vue.jsのリアクティブ機能とライフサイクルフックをインポート
-import { ref, onMounted } from 'vue'
-// 認証関連のコンポーザブルをインポート
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useAuth } from '@/composables/useAuth'
-// 画像アップロード機能のカスタムコンポーザブルをインポート
 import { useImageUpload } from '@/composables/useImageUpload'
-// Supabaseクライアントをインポート
+import { useDraft } from '@/composables/useDraft'
 import { supabase } from '@/lib/supabase'
 
-// 認証コンポーザブルからプロフィール情報とロード関数を取得
 const { profile, loadProfile, user } = useAuth()
-// 画像アップロード機能を取得
 const { uploadProfileImage, uploading: avatarUploading, error: imageError } = useImageUpload()
+const { draftData, startAutoSave, stopAutoSave, clearDraft } = useDraft('profile_edit', {
+  nickname: '',
+  bio: ''
+})
 
 // 編集モードの状態を管理するリアクティブ変数
 const isEditing = ref(false)
@@ -241,7 +242,7 @@ const handleAvatarUpload = async (event: Event) => {
     if (imageUrl) {
       await supabase
         .from('profiles')
-        .update({ avatar_url: imageUrl })
+        .update({ avatar_data: imageUrl })
         .eq('id', user.value.id)
       
       await loadProfile()
@@ -276,11 +277,9 @@ const handleUpdate = async () => {
     // エラーが発生した場合は例外をスロー
     if (error) throw error
     
-    // プロフィール情報を再読み込み
     await loadProfile()
-    // 成功メッセージを設定
     successMessage.value = 'プロフィールを更新しました'
-    // 編集モードを終了
+    clearDraft()
     isEditing.value = false
   } catch (error) {
     // エラーログを出力（スタックトレース付き）
@@ -293,11 +292,14 @@ const handleUpdate = async () => {
   }
 }
 
-// コンポーネントマウント時の処理
 onMounted(() => {
-  // プロフィール情報が存在しない場合は読み込み
   if (!profile.value) {
     loadProfile()
   }
+  startAutoSave()
+})
+
+onBeforeUnmount(() => {
+  stopAutoSave()
 })
 </script>

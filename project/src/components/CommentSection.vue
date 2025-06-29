@@ -187,7 +187,7 @@
 
 <script setup lang="ts">
 // Vue.jsのリアクティブ機能とライフサイクルフックをインポート
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 // 認証機能を提供するコンポーザブルをインポート
 import { useAuth } from '@/composables/useAuth'
 // Supabaseクライアントをインポート

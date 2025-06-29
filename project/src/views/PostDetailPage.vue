@@ -133,7 +133,7 @@
       <!-- コメントセクション（投稿が存在する場合のみ表示） -->
       <CommentSection 
         v-if="post"
-        :post-id="post.id"
+        :post-id="post.id.toString()"
         @comment-added="loadComments"
         @comment-deleted="loadComments"
       />
@@ -217,7 +217,7 @@ const loadPost = async () => {
     // 取得したデータを整形して投稿変数に設定
     post.value = {
       ...data,
-      categories: data.post_categories?.map(pc => pc.categories).filter(Boolean) || []
+      categories: data.post_categories?.map((pc: any) => pc.categories).filter(Boolean) || []
     }
     
     // いいね状態とコメント数を並行して読み込み
@@ -357,13 +357,6 @@ const deletePost = async () => {
   }
 }
 
-// 画像のパブリックURLを取得する関数
-const getImageUrl = (path: string) => {
-  // Supabaseストレージから画像のパブリックURLを取得
-  const { data } = supabase.storage.from('post_images').getPublicUrl(path)
-  // パブリックURLを返却
-  return data.publicUrl
-}
 
 // 日付文字列を日本語形式でフォーマットする関数
 const formatDate = (dateString: string) => {
@@ -377,15 +370,6 @@ const formatDate = (dateString: string) => {
   })
 }
 
-// 投稿内容をHTMLとしてレンダリングする関数
-const renderContent = (content: any) => {
-  // 内容が文字列の場合は改行をHTMLの<br>タグに変換
-  if (typeof content === 'string') {
-    return content.replace(/\n/g, '<br>')
-  }
-  // 文字列以外の場合はJSON文字列として返却
-  return JSON.stringify(content)
-}
 
 // コンポーネントマウント時に投稿データを読み込み
 onMounted(() => {

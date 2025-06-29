@@ -137,7 +137,7 @@
 
 <script setup lang="ts">
 // Vue.jsの必要な機能をインポート
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 // 認証機能のコンポーザブルをインポート
 import { useAuth } from '@/composables/useAuth'
 // Supabaseクライアントをインポート

@@ -278,7 +278,7 @@ const loadPost = async () => {
     coverImageUrl.value = data.cover_image_path || ''
     
     // 投稿に関連付けられたカテゴリIDを抽出して設定
-    selectedCategories.value = data.post_categories?.map(pc => pc.category_id) || []
+    selectedCategories.value = data.post_categories?.map((pc: any) => pc.category_id) || []
     
     // 下書きデータを更新
     draftData.value = {
@@ -323,7 +323,7 @@ const handleCoverImageUpload = async (event: Event) => {
   const file = target.files?.[0]
   
   if (file && user.value) {
-    const imageUrl = await uploadCoverImage(file, user.value.id, post.value?.id)
+    const imageUrl = await uploadCoverImage(file, user.value.id, post.value?.id?.toString())
     if (imageUrl) {
       coverImageUrl.value = imageUrl
     } else if (imageError.value) {

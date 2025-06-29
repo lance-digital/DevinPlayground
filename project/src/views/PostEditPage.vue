@@ -274,8 +274,8 @@ const loadPost = async () => {
       published: data.published
     }
     
-    // カバー画像URLを設定
-    coverImageUrl.value = data.cover_image_url || ''
+    // カバー画像パスを設定
+    coverImageUrl.value = data.cover_image_path || ''
     
     // 投稿に関連付けられたカテゴリIDを抽出して設定
     selectedCategories.value = data.post_categories?.map(pc => pc.category_id) || []
@@ -357,7 +357,7 @@ const handleSubmit = async () => {
         title: form.value.title,
         content: form.value.content,
         excerpt: form.value.excerpt || null,
-        cover_image_url: coverImageUrl.value || null,
+        cover_image_path: coverImageUrl.value || null,
         published: form.value.published,
         updated_at: new Date().toISOString()
       })

@@ -77,7 +77,7 @@
       
       <!-- 投稿が存在しない場合の表示 -->
       <div 
-        v-else-if="filteredPosts.length === 0"
+        v-else-if="searchPosts.length === 0"
         class="text-center text-text-muted"
       >
         投稿がありません
@@ -91,7 +91,7 @@
       >
         <!-- 各投稿のカード -->
         <article 
-          v-for="post in filteredPosts" 
+          v-for="post in searchPosts" 
           :key="post.id"
           :data-testid="`投稿一覧-投稿-${post.id}`"
           class="glass-card hover:shadow-lg transition-shadow cursor-pointer"
@@ -104,7 +104,7 @@
           >
             <!-- カバー画像 -->
             <img 
-              :src="getImageUrl(post.cover_image_path)"
+              :src="post.cover_image_path"
               :alt="post.title"
               class="w-full h-full object-cover"
             />
@@ -160,6 +160,8 @@ import { useRouter } from 'vue-router'
 import { supabase } from '@/lib/supabase'
 // Supabaseデータベースの型定義をインポート
 import type { Database } from '@/lib/supabase'
+// 投稿検索機能のコンポーザブルをインポート
+import { usePostSearch } from '@/composables/usePostSearch'
 
 // 投稿の型定義（プロフィールとカテゴリ情報を含む）
 type Post = Database['public']['Tables']['posts']['Row'] & {
@@ -173,16 +175,11 @@ type Category = Database['public']['Tables']['categories']['Row']
 // Vue Routerのインスタンスを取得
 const router = useRouter()
 
-// 投稿一覧のリアクティブ配列
-const posts = ref<Post[]>([])
-// フィルタされた投稿一覧のリアクティブ配列
-const filteredPosts = ref<Post[]>([])
+// 投稿検索機能を取得
+const { posts: searchPosts, loading, errorMessage, searchPosts: performSearch } = usePostSearch()
+
 // カテゴリ一覧のリアクティブ配列
 const categories = ref<Category[]>([])
-// ローディング状態のリアクティブ変数
-const loading = ref(false)
-// エラーメッセージのリアクティブ変数
-const errorMessage = ref('')
 // 選択されたカテゴリ名のリアクティブ変数
 const selectedCategory = ref('')
 // 検索クエリのリアクティブ変数
@@ -190,66 +187,9 @@ const searchQuery = ref('')
 // 並び順のリアクティブ変数
 const sortBy = ref('newest')
 
-// 投稿一覧を読み込む非同期関数
-const loadPosts = async () => {
-  // ローディング状態を開始
-  loading.value = true
-  try {
-    // Supabaseクエリの基本構造を構築
-    const { data, error } = await supabase
-      .from('posts')
-      .select(`
-        *,
-        profiles:author_id (nickname),
-        post_categories (
-          categories (id, name)
-        )
-      `)
-      .eq('published', true)
-      .order('created_at', { ascending: false })
-    
-    // エラーが発生した場合は例外をスロー
-    if (error) throw error
-    
-    // 取得したデータを整形して投稿配列に設定
-    posts.value = (data || []).map(post => ({
-      ...post,
-      categories: post.post_categories?.map(pc => pc.categories).filter(Boolean) || []
-    }))
-    
-    // フィルタを適用
-    applyFilters()
-  } catch (error) {
-    // エラーをコンソールに出力
-    console.error('Posts load error:', error instanceof Error ? error.stack : error)
-  } finally {
-    // ローディング状態を終了
-    loading.value = false
-  }
-}
-
 // フィルタを適用する関数
-const applyFilters = () => {
-  // 投稿一覧をフィルタリング
-  filteredPosts.value = posts.value.filter(post => {
-    // カテゴリフィルタの適用
-    const matchesCategory = !selectedCategory.value || 
-      post.categories?.some(cat => cat.name === selectedCategory.value)
-    
-    // 検索フィルタの適用
-    const matchesSearch = !searchQuery.value || 
-      post.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      (typeof post.content === 'string' && post.content.toLowerCase().includes(searchQuery.value.toLowerCase()))
-    
-    return matchesCategory && matchesSearch
-  })
-
-  // ソート順の適用
-  if (sortBy.value === 'newest') {
-    filteredPosts.value.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-  } else if (sortBy.value === 'oldest') {
-    filteredPosts.value.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-  }
+const applyFilters = async () => {
+  await performSearch(searchQuery.value, selectedCategory.value, sortBy.value)
 }
 
 // カテゴリ一覧を読み込む非同期関数
@@ -290,7 +230,7 @@ const formatDate = (dateString: string) => {
 // コンポーネントマウント時に実行される処理
 onMounted(() => {
   // 投稿一覧を読み込み
-  loadPosts()
+  applyFilters()
   // カテゴリ一覧を読み込み
   loadCategories()
 })

@@ -4,32 +4,32 @@
       <button
         type="button"
         @click="() => editor?.chain().focus().toggleBold().run()"
-        :class="{ 'bg-primary text-white': editor?.isActive('bold') }"
-        class="px-3 py-1 bg-surface hover:bg-surface-variant rounded text-sm"
+        :class="{ 'bg-primary text-primary-foreground': editor?.isActive('bold') }"
+        class="px-3 py-1 bg-muted hover:bg-muted-foreground/10 rounded text-sm border border-border"
       >
         太字
       </button>
       <button
         type="button"
         @click="() => editor?.chain().focus().toggleItalic().run()"
-        :class="{ 'bg-primary text-white': editor?.isActive('italic') }"
-        class="px-3 py-1 bg-surface hover:bg-surface-variant rounded text-sm"
+        :class="{ 'bg-primary text-primary-foreground': editor?.isActive('italic') }"
+        class="px-3 py-1 bg-muted hover:bg-muted-foreground/10 rounded text-sm border border-border"
       >
         斜体
       </button>
       <button
         type="button"
         @click="() => editor?.chain().focus().toggleHeading({ level: 2 }).run()"
-        :class="{ 'bg-primary text-white': editor?.isActive('heading', { level: 2 }) }"
-        class="px-3 py-1 bg-surface hover:bg-surface-variant rounded text-sm"
+        :class="{ 'bg-primary text-primary-foreground': editor?.isActive('heading', { level: 2 }) }"
+        class="px-3 py-1 bg-muted hover:bg-muted-foreground/10 rounded text-sm border border-border"
       >
         見出し
       </button>
       <button
         type="button"
         @click="() => editor?.chain().focus().toggleBulletList().run()"
-        :class="{ 'bg-primary text-white': editor?.isActive('bulletList') }"
-        class="px-3 py-1 bg-surface hover:bg-surface-variant rounded text-sm"
+        :class="{ 'bg-primary text-primary-foreground': editor?.isActive('bulletList') }"
+        class="px-3 py-1 bg-muted hover:bg-muted-foreground/10 rounded text-sm border border-border"
       >
         リスト
       </button>
@@ -43,7 +43,7 @@
       <button
         type="button"
         @click="() => $refs.imageInput?.click()"
-        class="px-3 py-1 bg-surface hover:bg-surface-variant rounded text-sm"
+        class="px-3 py-1 bg-muted hover:bg-muted-foreground/10 rounded text-sm border border-border"
       >
         画像
       </button>

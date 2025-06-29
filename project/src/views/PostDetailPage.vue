@@ -66,12 +66,12 @@
         
         <!-- カバー画像（存在する場合のみ表示） -->
         <div 
-          v-if="post.cover_image_url"
+          v-if="post.cover_image_path"
           class="w-full h-64 bg-surface-accent rounded-md mb-6 overflow-hidden"
         >
           <!-- カバー画像 -->
           <img 
-            :src="post.cover_image_url"
+            :src="post.cover_image_path"
             :alt="post.title"
             class="w-full h-full object-cover"
           />

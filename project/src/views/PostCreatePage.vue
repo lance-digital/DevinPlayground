@@ -275,7 +275,7 @@ const handleSubmit = async () => {
         content: form.value.content, // フォームから内容を取得（TipTap JSON形式）
         excerpt: form.value.excerpt || null, // フォームから概要を取得（空の場合はnull）
         author_id: user.value.id, // 認証ユーザーのIDを著者IDに設定
-        cover_image_url: coverImageUrl.value || null, // カバー画像URL
+        cover_image_path: coverImageUrl.value || null, // カバー画像パス
         published: form.value.published // フォームから公開状態を取得
       })
       .select() // 挿入されたデータを取得

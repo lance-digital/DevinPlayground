@@ -161,12 +161,16 @@ export function useImageUpload() {
         .from('post_images')
         .list()
 
+      const { data: coverImages } = await supabase.storage
+        .from('cover_images')
+        .list()
+
       if (profileImages) {
         for (const image of profileImages) {
           const { data: profileExists } = await supabase
             .from('profiles')
-            .select('avatar_url')
-            .like('avatar_url', `%${image.name}%`)
+            .select('avatar_data')
+            .like('avatar_data', `%${image.name}%`)
             .single()
           
           if (!profileExists) {
@@ -179,8 +183,8 @@ export function useImageUpload() {
         for (const image of postImages) {
           const { data: postExists } = await supabase
             .from('posts')
-            .select('cover_image_url, content')
-            .or(`cover_image_url.like.%${image.name}%,content.like.%${image.name}%`)
+            .select('content')
+            .like('content', `%${image.name}%`)
             .single()
           
           if (!postExists) {
@@ -188,8 +192,63 @@ export function useImageUpload() {
           }
         }
       }
+
+      if (coverImages) {
+        for (const image of coverImages) {
+          const { data: postExists } = await supabase
+            .from('posts')
+            .select('cover_image_path')
+            .like('cover_image_path', `%${image.name}%`)
+            .single()
+          
+          if (!postExists) {
+            await deleteImage('cover_images', image.name)
+          }
+        }
+      }
     } catch (error: any) {
       console.error('Image cleanup error:', error instanceof Error ? error.stack : error)
+    }
+  }
+
+  const cleanupSpecificImage = async (imageUrl: string): Promise<void> => {
+    try {
+      const urlParts = imageUrl.split('/')
+      const fileName = urlParts[urlParts.length - 1]
+      
+      if (imageUrl.includes('profile_images')) {
+        const { data: profileExists } = await supabase
+          .from('profiles')
+          .select('avatar_data')
+          .like('avatar_data', `%${fileName}%`)
+          .single()
+        
+        if (!profileExists) {
+          await deleteImage('profile_images', fileName)
+        }
+      } else if (imageUrl.includes('cover_images')) {
+        const { data: postExists } = await supabase
+          .from('posts')
+          .select('cover_image_path')
+          .like('cover_image_path', `%${fileName}%`)
+          .single()
+        
+        if (!postExists) {
+          await deleteImage('cover_images', fileName)
+        }
+      } else if (imageUrl.includes('post_images')) {
+        const { data: postExists } = await supabase
+          .from('posts')
+          .select('content')
+          .like('content', `%${fileName}%`)
+          .single()
+        
+        if (!postExists) {
+          await deleteImage('post_images', fileName)
+        }
+      }
+    } catch (error: any) {
+      console.error('Specific image cleanup error:', error instanceof Error ? error.stack : error)
     }
   }
 
@@ -200,6 +259,7 @@ export function useImageUpload() {
     uploadCoverImage,
     uploadInlineImage,
     deleteImage,
-    cleanupOrphanedImages
+    cleanupOrphanedImages,
+    cleanupSpecificImage
   }
 }

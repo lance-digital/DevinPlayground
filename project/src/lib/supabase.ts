@@ -50,7 +50,7 @@ export type Database = {
           title: string // 投稿タイトル
           content: any // 投稿内容（JSONB形式）
           excerpt: string | null // 投稿の概要・抜粋
-          cover_image_url: string | null // カバー画像のURL
+          cover_image_path: string | null // カバー画像のパス
           author_id: string // 投稿者ID（外部キー）
           published: boolean // 公開状態フラグ
           created_at: string // 作成日時
@@ -61,7 +61,7 @@ export type Database = {
           title: string // 投稿タイトル（必須）
           content: any // 投稿内容（必須、JSONB形式）
           excerpt?: string | null // 投稿の概要・抜粋（任意）
-          cover_image_url?: string | null // カバー画像のURL（任意）
+          cover_image_path?: string | null // カバー画像のパス（任意）
           author_id: string // 投稿者ID（必須）
           published?: boolean // 公開状態フラグ（任意、デフォルトfalse）
           created_at?: string // 作成日時（任意、自動設定）
@@ -72,7 +72,7 @@ export type Database = {
           title?: string // 投稿タイトル（任意）
           content?: any // 投稿内容（任意、JSONB形式）
           excerpt?: string | null // 投稿の概要・抜粋（任意）
-          cover_image_url?: string | null // カバー画像のURL（任意）
+          cover_image_path?: string | null // カバー画像のパス（任意）
           author_id?: string // 投稿者ID（任意）
           published?: boolean // 公開状態フラグ（任意）
           created_at?: string // 作成日時（任意）

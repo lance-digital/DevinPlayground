@@ -171,7 +171,7 @@ type Category = Database['public']['Tables']['categories']['Row']
 const router = useRouter()
 
 // 投稿検索機能を取得
-const { posts: searchPosts, loading, searchPosts: searchFunction } = usePostSearch()
+const { posts: searchPosts, loading, searchPosts: performSearch } = usePostSearch()
 
 // カテゴリ一覧のリアクティブ配列
 const categories = ref<Category[]>([])
@@ -184,7 +184,7 @@ const sortBy = ref('newest')
 
 // フィルタを適用する関数
 const applyFilters = async () => {
-  await searchFunction(searchQuery.value, selectedCategory.value, sortBy.value)
+  await performSearch(searchQuery.value, selectedCategory.value, sortBy.value)
 }
 
 // カテゴリ一覧を読み込む非同期関数

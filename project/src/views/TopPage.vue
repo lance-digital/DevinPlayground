@@ -351,16 +351,33 @@ onMounted(async () => {
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
   font-size: 0.75rem;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(var(--color-primary), 0.2);
+}
+
+.juna-demo-card:hover .juna-tag {
+  background: rgba(var(--color-primary), 0.1);
+  color: rgb(var(--color-primary));
+  border-color: rgba(var(--color-primary), 0.4);
+  transform: scale(1.05);
 }
 
 .juna-welcome-card {
-  background: rgba(var(--color-surface), 0.7);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(var(--color-border), 0.3);
+  background: rgba(var(--color-surface), 0.8);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(var(--color-border), 0.4);
   border-radius: 16px;
   padding: 1.5rem;
   text-align: center;
   max-width: 400px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.juna-welcome-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+  border-color: rgba(var(--color-primary), 0.5);
 }
 
 /* ボタンスタイル */
@@ -369,35 +386,56 @@ onMounted(async () => {
   border-radius: 12px;
   font-weight: 600;
   font-size: 1rem;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   border: none;
   cursor: pointer;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.juna-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.juna-btn:hover::before {
+  left: 100%;
 }
 
 .juna-btn-primary {
   background: linear-gradient(135deg, rgb(var(--color-primary)), rgba(124, 58, 237, 1));
   color: white;
-  box-shadow: 0 4px 15px rgba(var(--color-primary), 0.3);
+  box-shadow: 0 6px 20px rgba(var(--color-primary), 0.4);
 }
 
 .juna-btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(var(--color-primary), 0.4);
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 12px 35px rgba(var(--color-primary), 0.5);
+  background: linear-gradient(135deg, rgba(124, 58, 237, 1), rgb(var(--color-primary)));
 }
 
 .juna-btn-outline {
-  background: transparent;
+  background: rgba(var(--color-surface), 0.1);
   color: rgb(var(--color-primary));
   border: 2px solid rgb(var(--color-primary));
+  box-shadow: 0 4px 15px rgba(var(--color-primary), 0.2);
 }
 
 .juna-btn-outline:hover {
-  background: rgba(var(--color-primary), 0.1);
-  transform: translateY(-2px);
+  background: rgba(var(--color-primary), 0.15);
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 8px 25px rgba(var(--color-primary), 0.3);
+  border-color: rgba(var(--color-primary), 0.8);
 }
 
 /* 特徴セクション */
@@ -431,19 +469,39 @@ onMounted(async () => {
 }
 
 .juna-feature-card {
-  background: rgba(var(--color-surface), 0.7);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(var(--color-border), 0.3);
+  background: rgba(var(--color-surface), 0.8);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(var(--color-border), 0.4);
   border-radius: 16px;
   padding: 2.5rem 2rem;
   text-align: center;
-  transition: all 0.3s ease;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.juna-feature-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(var(--color-primary), 0.05), rgba(124, 58, 237, 0.05));
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.juna-feature-card:hover::before {
+  opacity: 1;
 }
 
 .juna-feature-card:hover {
-  transform: translateY(-10px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-  border-color: rgba(var(--color-primary), 0.4);
+  transform: translateY(-15px) scale(1.03);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(var(--color-primary), 0.3);
+  border-color: rgba(var(--color-primary), 0.6);
+  background: rgba(var(--color-surface), 0.9);
 }
 
 .juna-feature-icon {
@@ -456,6 +514,14 @@ onMounted(async () => {
   justify-content: center;
   margin: 0 auto 1.5rem;
   position: relative;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.juna-feature-card:hover .juna-feature-icon {
+  transform: translateY(-5px) scale(1.1);
+  box-shadow: 0 8px 25px rgba(var(--color-primary), 0.3);
+  background: linear-gradient(135deg, rgba(var(--color-surface-variant), 1), rgba(var(--color-primary), 0.1));
 }
 
 .juna-feature-title {
@@ -479,8 +545,21 @@ onMounted(async () => {
 .juna-icon-mobile {
   width: 40px;
   height: 40px;
-  background: rgb(var(--color-primary));
+  background: linear-gradient(135deg, rgb(var(--color-primary)), rgba(124, 58, 237, 1));
   border-radius: 8px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(var(--color-primary), 0.3);
+}
+
+.juna-feature-card:hover .juna-icon-pen,
+.juna-feature-card:hover .juna-icon-users,
+.juna-feature-card:hover .juna-icon-heart,
+.juna-feature-card:hover .juna-icon-tag,
+.juna-feature-card:hover .juna-icon-bell,
+.juna-feature-card:hover .juna-icon-mobile {
+  transform: rotate(5deg) scale(1.1);
+  box-shadow: 0 4px 15px rgba(var(--color-primary), 0.5);
+  background: linear-gradient(135deg, rgba(124, 58, 237, 1), rgb(var(--color-primary)));
 }
 
 /* レスポンシブデザイン */

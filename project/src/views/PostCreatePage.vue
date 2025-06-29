@@ -53,21 +53,36 @@
             />
           </div>
           
+          <!-- カバー画像入力セクション -->
+          <div>
+            <label for="cover-image" class="block text-text-muted text-sm font-medium mb-2">
+              カバー画像（任意）
+            </label>
+            <input
+              id="cover-image"
+              type="file"
+              accept="image/*"
+              @change="handleCoverImageUpload"
+              data-testid="投稿作成-カバー画像入力"
+              class="w-full px-3 py-2 bg-surface-variant border border-border rounded-md text-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            />
+            <div v-if="coverImageUploading" class="mt-2 text-sm text-primary">
+              カバー画像をアップロード中...
+            </div>
+            <div v-if="coverImageUrl" class="mt-2">
+              <img :src="coverImageUrl" alt="カバー画像プレビュー" class="max-w-xs h-auto rounded-lg" />
+            </div>
+          </div>
+
           <!-- 内容入力セクション -->
           <div>
             <!-- 内容ラベル：ブロック表示、テキスト色、小フォント、中太、下マージン -->
-            <label for="content" class="block text-text-muted text-sm font-medium mb-2">
+            <label class="block text-text-muted text-sm font-medium mb-2">
               内容
             </label>
-            <!-- 内容入力テキストエリア：ID設定、テストID、双方向バインディング、行数、必須、スタイリング、プレースホルダー -->
-            <textarea
-              id="content"
-              data-testid="投稿作成-内容入力"
+            <TipTapEditor 
               v-model="form.content"
-              rows="12"
-              required
-              class="w-full px-3 py-2 bg-surface-variant border border-border rounded-md text-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="投稿の内容を入力してください"
+              test-id="投稿作成-内容入力"
             />
           </div>
           
@@ -131,7 +146,7 @@
             <button
               data-testid="投稿作成-送信ボタン"
               type="submit"
-              :disabled="loading"
+              :disabled="loading || coverImageUploading"
               class="btn btn-primary"
             >
               {{ loading ? '作成中...' : '投稿を作成' }}
@@ -158,6 +173,10 @@ import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 // 認証機能のカスタムコンポーザブルをインポート：ユーザー認証状態管理
 import { useAuth } from '@/composables/useAuth'
+// 画像アップロード機能のカスタムコンポーザブルをインポート
+import { useImageUpload } from '@/composables/useImageUpload'
+// TipTapエディターコンポーネントをインポート
+import TipTapEditor from '@/components/TipTapEditor.vue'
 // Supabaseクライアントをインポート：データベース操作
 import { supabase } from '@/lib/supabase'
 // Supabaseデータベースの型定義をインポート：TypeScript型安全性確保
@@ -174,7 +193,7 @@ const { user } = useAuth()
 // フォームデータのリアクティブ参照を定義：入力値の双方向バインディング
 const form = ref({
   title: '', // 投稿タイトル：文字列型、初期値空文字
-  content: '', // 投稿内容：文字列型、初期値空文字
+  content: null, // 投稿内容：TipTap JSON形式、初期値null
   excerpt: '', // 投稿概要：文字列型、初期値空文字
   published: true // 公開状態：真偽値型、初期値true（公開）
 })
@@ -187,6 +206,10 @@ const selectedCategories = ref<number[]>([])
 const loading = ref(false)
 // エラーメッセージのリアクティブ参照を定義：ユーザーへのエラー表示
 const errorMessage = ref('')
+// 画像アップロード機能を取得
+const { uploadCoverImage, uploading: coverImageUploading, error: imageError } = useImageUpload()
+// カバー画像URLのリアクティブ参照を定義
+const coverImageUrl = ref('')
 
 // カテゴリ一覧を読み込む非同期関数：データベースからカテゴリデータを取得
 const loadCategories = async () => {
@@ -207,11 +230,32 @@ const loadCategories = async () => {
   }
 }
 
+// カバー画像アップロードを処理する非同期関数
+const handleCoverImageUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  
+  if (file && user.value) {
+    const imageUrl = await uploadCoverImage(file, user.value.id)
+    if (imageUrl) {
+      coverImageUrl.value = imageUrl
+    } else if (imageError.value) {
+      errorMessage.value = imageError.value
+    }
+  }
+}
+
 // フォーム送信を処理する非同期関数：投稿データの作成とデータベース保存
 const handleSubmit = async () => {
   // ユーザーが認証されていない場合はエラーメッセージを設定して終了
   if (!user.value) {
     errorMessage.value = 'ログインが必要です'
+    return
+  }
+
+  // 内容が入力されているかチェック
+  if (!form.value.content || !form.value.title.trim()) {
+    errorMessage.value = 'タイトルと内容を入力してください'
     return
   }
   
@@ -226,9 +270,10 @@ const handleSubmit = async () => {
       .from('posts')
       .insert({
         title: form.value.title, // フォームからタイトルを取得
-        content: form.value.content, // フォームから内容を取得
+        content: form.value.content, // フォームから内容を取得（TipTap JSON形式）
         excerpt: form.value.excerpt || null, // フォームから概要を取得（空の場合はnull）
         author_id: user.value.id, // 認証ユーザーのIDを著者IDに設定
+        cover_image_url: coverImageUrl.value || null, // カバー画像URL
         published: form.value.published // フォームから公開状態を取得
       })
       .select() // 挿入されたデータを取得

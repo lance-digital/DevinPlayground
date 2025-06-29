@@ -61,20 +61,36 @@
             />
           </div>
           
+          <!-- カバー画像入力フィールド：投稿のカバー画像を編集 -->
+          <div>
+            <label for="cover-image" class="block text-text-muted text-sm font-medium mb-2">
+              カバー画像（任意）
+            </label>
+            <input
+              id="cover-image"
+              type="file"
+              accept="image/*"
+              @change="handleCoverImageUpload"
+              data-testid="投稿編集-カバー画像入力"
+              class="w-full px-3 py-2 bg-surface-variant border border-border rounded-md text-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            />
+            <div v-if="coverImageUploading" class="mt-2 text-sm text-primary">
+              カバー画像をアップロード中...
+            </div>
+            <div v-if="coverImageUrl" class="mt-2">
+              <img :src="coverImageUrl" alt="カバー画像プレビュー" class="max-w-xs h-auto rounded-lg" />
+            </div>
+          </div>
+
           <!-- 内容入力フィールド：投稿の本文を編集するためのメイン入力欄 -->
           <div>
             <!-- 内容入力のラベル：投稿の本文であることを示すラベル -->
-            <label for="content" class="block text-text-muted text-sm font-medium mb-2">
+            <label class="block text-text-muted text-sm font-medium mb-2">
               内容
             </label>
-            <!-- 内容入力欄：大きなテキストエリアで12行表示、必須項目 -->
-            <textarea
-              id="content"
-              data-testid="投稿編集-内容入力"
+            <TipTapEditor 
               v-model="form.content"
-              rows="12"
-              required
-              class="w-full px-3 py-2 bg-surface-variant border border-border rounded-md text-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              test-id="投稿編集-内容入力"
             />
           </div>
           
@@ -143,7 +159,7 @@
             <button
               data-testid="投稿編集-保存ボタン"
               type="submit"
-              :disabled="saveLoading"
+              :disabled="saveLoading || coverImageUploading"
               class="btn btn-primary"
             >
               {{ saveLoading ? '保存中...' : '変更を保存' }}
@@ -170,6 +186,10 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 // 認証状態管理のコンポーザブルをインポート
 import { useAuth } from '@/composables/useAuth'
+// 画像アップロード機能のカスタムコンポーザブルをインポート
+import { useImageUpload } from '@/composables/useImageUpload'
+// TipTapエディターコンポーネントをインポート
+import TipTapEditor from '@/components/TipTapEditor.vue'
 // Supabaseクライアントをインポート
 import { supabase } from '@/lib/supabase'
 // Supabaseデータベースの型定義をインポート
@@ -203,10 +223,15 @@ const successMessage = ref('')
 // 投稿編集フォームのデータを管理するリアクティブオブジェクト
 const form = ref({
   title: '',      // 投稿タイトル
-  content: '',    // 投稿内容
+  content: null,  // 投稿内容（TipTap JSON形式）
   excerpt: '',    // 投稿概要
   published: false // 公開状態
 })
+
+// 画像アップロード機能を取得
+const { uploadCoverImage, uploading: coverImageUploading, error: imageError } = useImageUpload()
+// カバー画像URLのリアクティブ参照を定義
+const coverImageUrl = ref('')
 
 // 選択されたカテゴリIDの配列を管理するリアクティブ変数
 const selectedCategories = ref<number[]>([])
@@ -242,10 +267,13 @@ const loadPost = async () => {
     // フォームデータに投稿情報を設定
     form.value = {
       title: data.title,
-      content: typeof data.content === 'string' ? data.content : JSON.stringify(data.content),
+      content: data.content,
       excerpt: data.excerpt || '',
       published: data.published
     }
+    
+    // カバー画像URLを設定
+    coverImageUrl.value = data.cover_image_url || ''
     
     // 投稿に関連付けられたカテゴリIDを抽出して設定
     selectedCategories.value = data.post_categories?.map(pc => pc.category_id) || []
@@ -279,10 +307,31 @@ const loadCategories = async () => {
   }
 }
 
+// カバー画像アップロードを処理する非同期関数
+const handleCoverImageUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  
+  if (file && user.value) {
+    const imageUrl = await uploadCoverImage(file, user.value.id, post.value?.id)
+    if (imageUrl) {
+      coverImageUrl.value = imageUrl
+    } else if (imageError.value) {
+      errorMessage.value = imageError.value
+    }
+  }
+}
+
 // フォーム送信を処理する非同期関数
 const handleSubmit = async () => {
   // 投稿データが存在しない場合は処理を中断
   if (!post.value) return
+
+  // 内容が入力されているかチェック
+  if (!form.value.content || !form.value.title.trim()) {
+    errorMessage.value = 'タイトルと内容を入力してください'
+    return
+  }
   
   // メッセージをクリア
   errorMessage.value = ''
@@ -298,6 +347,7 @@ const handleSubmit = async () => {
         title: form.value.title,
         content: form.value.content,
         excerpt: form.value.excerpt || null,
+        cover_image_url: coverImageUrl.value || null,
         published: form.value.published,
         updated_at: new Date().toISOString()
       })

@@ -114,6 +114,8 @@ const handleImageUpload = async (event: Event) => {
   outline: none;
   padding: 1rem;
   min-height: 200px;
+  color: rgb(var(--color-text));
+  background-color: rgb(var(--color-surface-variant));
 }
 
 .ProseMirror img {
@@ -127,6 +129,7 @@ const handleImageUpload = async (event: Event) => {
   font-size: 1.5rem;
   font-weight: 600;
   margin: 1rem 0 0.5rem 0;
+  color: rgb(var(--color-heading));
 }
 
 .ProseMirror ul {
@@ -136,9 +139,20 @@ const handleImageUpload = async (event: Event) => {
 
 .ProseMirror li {
   margin: 0.25rem 0;
+  color: rgb(var(--color-text));
 }
 
 .ProseMirror p {
   margin: 0.5rem 0;
+  color: rgb(var(--color-text));
+}
+
+.ProseMirror a {
+  color: rgb(var(--color-primary));
+  text-decoration: underline;
+}
+
+.ProseMirror a:hover {
+  color: rgb(var(--color-primary-light));
 }
 </style>

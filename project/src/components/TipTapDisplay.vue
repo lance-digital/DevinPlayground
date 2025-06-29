@@ -63,6 +63,7 @@ watch(() => props.content, (newContent) => {
 <style>
 .ProseMirror {
   outline: none;
+  color: rgb(var(--color-text));
 }
 
 .ProseMirror img {
@@ -76,7 +77,7 @@ watch(() => props.content, (newContent) => {
   font-size: 1.5rem;
   font-weight: 600;
   margin: 1rem 0 0.5rem 0;
-  color: #e5e7eb;
+  color: rgb(var(--color-heading));
 }
 
 .ProseMirror ul {
@@ -86,19 +87,20 @@ watch(() => props.content, (newContent) => {
 
 .ProseMirror li {
   margin: 0.25rem 0;
+  color: rgb(var(--color-text));
 }
 
 .ProseMirror p {
   margin: 0.5rem 0;
-  color: #d1d5db;
+  color: rgb(var(--color-text));
 }
 
 .ProseMirror a {
-  color: #60a5fa;
+  color: rgb(var(--color-primary));
   text-decoration: underline;
 }
 
 .ProseMirror a:hover {
-  color: #93c5fd;
+  color: rgb(var(--color-primary-light));
 }
 </style>

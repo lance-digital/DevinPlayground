@@ -37,6 +37,7 @@
               id="title"
               data-testid="投稿編集-タイトル入力"
               v-model="form.title"
+              @input="draftData.title = form.title"
               type="text"
               required
               maxlength="200"
@@ -55,6 +56,7 @@
               id="excerpt"
               data-testid="投稿編集-概要入力"
               v-model="form.excerpt"
+              @input="draftData.excerpt = form.excerpt"
               rows="2"
               maxlength="300"
               class="w-full px-3 py-2 bg-surface-variant border border-border rounded-md text-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -66,14 +68,16 @@
             <label for="cover-image" class="block text-text-muted text-sm font-medium mb-2">
               カバー画像（任意）
             </label>
-            <input
-              id="cover-image"
-              type="file"
-              accept="image/*"
-              @change="handleCoverImageUpload"
-              data-testid="投稿編集-カバー画像入力"
-              class="w-full px-3 py-2 bg-surface-variant border border-border rounded-md text-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
+            <div class="relative">
+              <input
+                id="cover-image"
+                type="file"
+                accept="image/*"
+                @change="handleCoverImageUpload"
+                data-testid="投稿編集-カバー画像入力"
+                class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-border rounded-md bg-surface-variant"
+              />
+            </div>
             <div v-if="coverImageUploading" class="mt-2 text-sm text-primary">
               カバー画像をアップロード中...
             </div>
@@ -90,6 +94,7 @@
             </label>
             <TipTapEditor 
               v-model="form.content"
+              @update:modelValue="draftData.content = form.content"
               test-id="投稿編集-内容入力"
             />
           </div>
@@ -180,19 +185,13 @@
 </template>
 
 <script setup lang="ts">
-// Vue.jsのリアクティブ機能とライフサイクルフックをインポート
-import { ref, onMounted } from 'vue'
-// Vue Routerのルート情報とナビゲーション機能をインポート
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-// 認証状態管理のコンポーザブルをインポート
 import { useAuth } from '@/composables/useAuth'
-// 画像アップロード機能のカスタムコンポーザブルをインポート
 import { useImageUpload } from '@/composables/useImageUpload'
-// TipTapエディターコンポーネントをインポート
+import { useDraft } from '@/composables/useDraft'
 import TipTapEditor from '@/components/TipTapEditor.vue'
-// Supabaseクライアントをインポート
 import { supabase } from '@/lib/supabase'
-// Supabaseデータベースの型定義をインポート
 import type { Database } from '@/lib/supabase'
 
 // 投稿データの型定義：Supabaseのpostsテーブルの行型
@@ -200,12 +199,15 @@ type Post = Database['public']['Tables']['posts']['Row']
 // カテゴリデータの型定義：Supabasecategoriesテーブルの行型
 type Category = Database['public']['Tables']['categories']['Row']
 
-// 現在のルート情報を取得
 const route = useRoute()
-// ルーターナビゲーション機能を取得
 const router = useRouter()
-// 認証状態（ユーザー情報と管理者権限）を取得
 const { user, isAdmin } = useAuth()
+const { draftData, startAutoSave, stopAutoSave, clearDraft } = useDraft(`post_edit_${route.params.id}`, {
+  title: '',
+  content: '',
+  excerpt: '',
+  published: false
+})
 
 // 編集対象の投稿データを格納するリアクティブ変数
 const post = ref<Post | null>(null)
@@ -277,6 +279,14 @@ const loadPost = async () => {
     
     // 投稿に関連付けられたカテゴリIDを抽出して設定
     selectedCategories.value = data.post_categories?.map(pc => pc.category_id) || []
+    
+    // 下書きデータを更新
+    draftData.value = {
+      title: form.value.title,
+      content: form.value.content,
+      excerpt: form.value.excerpt,
+      published: form.value.published
+    }
   } catch (error) {
     // エラーログを出力：スタック情報またはエラーオブジェクトを表示
     console.error('Post load error:', error instanceof Error ? error.stack : error)
@@ -382,9 +392,8 @@ const handleSubmit = async () => {
       if (insertError) throw insertError
     }
     
-    // 成功メッセージを設定
     successMessage.value = '投稿を更新しました'
-    // 1秒後に投稿詳細画面に遷移
+    clearDraft()
     setTimeout(() => {
       router.push(`/posts/${post.value!.id}`)
     }, 1000)
@@ -428,5 +437,10 @@ onMounted(async () => {
     loadPost(),
     loadCategories()
   ])
+  startAutoSave()
+})
+
+onBeforeUnmount(() => {
+  stopAutoSave()
 })
 </script>

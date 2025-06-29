@@ -258,10 +258,14 @@ const stats = ref({
 const allUsers = ref<Profile[]>([])
 // フィルタされたユーザー一覧のリアクティブ状態
 const filteredUsers = ref<Profile[]>([])
+// 最近のユーザー一覧のリアクティブ状態（最新5件）
+const recentUsers = ref<Profile[]>([])
 // 全投稿一覧のリアクティブ状態
 const allPosts = ref<Post[]>([])
 // フィルタされた投稿一覧のリアクティブ状態
 const filteredPosts = ref<Post[]>([])
+// 最近の投稿一覧のリアクティブ状態（最新5件）
+const recentPosts = ref<Post[]>([])
 // ユーザー検索クエリのリアクティブ状態
 const userSearchQuery = ref('')
 // 投稿検索クエリのリアクティブ状態
@@ -322,6 +326,8 @@ const loadAllUsers = async () => {
     // 取得したデータを状態に設定：nullの場合は空配列
     allUsers.value = data || []
     filteredUsers.value = data || []
+    // 最新5件のユーザーを設定
+    recentUsers.value = (data || []).slice(0, 5)
   } catch (error) {
     // 全ユーザー読み込みエラーをコンソールに出力：スタックトレース付き
     console.error('All users load error:', error instanceof Error ? error.stack : error)
@@ -345,6 +351,8 @@ const loadAllPosts = async () => {
     // 取得したデータを状態に設定：nullの場合は空配列
     allPosts.value = data || []
     filteredPosts.value = data || []
+    // 最新5件の投稿を設定
+    recentPosts.value = (data || []).slice(0, 5)
   } catch (error) {
     // 全投稿読み込みエラーをコンソールに出力：スタックトレース付き
     console.error('All posts load error:', error instanceof Error ? error.stack : error)

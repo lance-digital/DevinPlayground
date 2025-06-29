@@ -42,7 +42,7 @@ export function useImageUpload() {
         }
       }
 
-      const { data, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('profile_images')
         .upload(fileName, compressedFile, {
           cacheControl: '3600',
@@ -77,7 +77,7 @@ export function useImageUpload() {
         ? `${userId}/${postId}_cover.${fileExt}`
         : `${userId}/${Date.now()}_cover.${fileExt}`
 
-      const { data, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('cover_images')
         .upload(fileName, compressedFile, {
           cacheControl: '3600',
@@ -110,7 +110,7 @@ export function useImageUpload() {
       const fileExt = compressedFile.name.split('.').pop()
       const fileName = `${userId}/${Date.now()}_inline.${fileExt}`
 
-      const { data, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('post_images')
         .upload(fileName, compressedFile, {
           cacheControl: '3600',
@@ -151,12 +151,55 @@ export function useImageUpload() {
     }
   }
 
+  const cleanupOrphanedImages = async (): Promise<void> => {
+    try {
+      const { data: profileImages } = await supabase.storage
+        .from('profile_images')
+        .list()
+      
+      const { data: postImages } = await supabase.storage
+        .from('post_images')
+        .list()
+
+      if (profileImages) {
+        for (const image of profileImages) {
+          const { data: profileExists } = await supabase
+            .from('profiles')
+            .select('avatar_url')
+            .like('avatar_url', `%${image.name}%`)
+            .single()
+          
+          if (!profileExists) {
+            await deleteImage('profile_images', image.name)
+          }
+        }
+      }
+
+      if (postImages) {
+        for (const image of postImages) {
+          const { data: postExists } = await supabase
+            .from('posts')
+            .select('cover_image_url, content')
+            .or(`cover_image_url.like.%${image.name}%,content.like.%${image.name}%`)
+            .single()
+          
+          if (!postExists) {
+            await deleteImage('post_images', image.name)
+          }
+        }
+      }
+    } catch (error: any) {
+      console.error('Image cleanup error:', error instanceof Error ? error.stack : error)
+    }
+  }
+
   return {
     uploading,
     error,
     uploadProfileImage,
     uploadCoverImage,
     uploadInlineImage,
-    deleteImage
+    deleteImage,
+    cleanupOrphanedImages
   }
 }

@@ -27,6 +27,7 @@
               id="title"
               data-testid="投稿作成-タイトル入力"
               v-model="form.title"
+              @input="draftData.title = form.title"
               type="text"
               required
               maxlength="200"
@@ -46,6 +47,7 @@
               id="excerpt"
               data-testid="投稿作成-概要入力"
               v-model="form.excerpt"
+              @input="draftData.excerpt = form.excerpt"
               rows="2"
               maxlength="300"
               class="w-full px-3 py-2 bg-surface-variant border border-border rounded-md text-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -58,14 +60,16 @@
             <label for="cover-image" class="block text-text-muted text-sm font-medium mb-2">
               カバー画像（任意）
             </label>
-            <input
-              id="cover-image"
-              type="file"
-              accept="image/*"
-              @change="handleCoverImageUpload"
-              data-testid="投稿作成-カバー画像入力"
-              class="w-full px-3 py-2 bg-surface-variant border border-border rounded-md text-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
+            <div class="relative">
+              <input
+                id="cover-image"
+                type="file"
+                accept="image/*"
+                @change="handleCoverImageUpload"
+                data-testid="投稿作成-カバー画像入力"
+                class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-border rounded-md bg-surface-variant"
+              />
+            </div>
             <div v-if="coverImageUploading" class="mt-2 text-sm text-primary">
               カバー画像をアップロード中...
             </div>
@@ -82,6 +86,7 @@
             </label>
             <TipTapEditor 
               v-model="form.content"
+              @update:modelValue="draftData.content = form.content"
               test-id="投稿作成-内容入力"
             />
           </div>
@@ -167,35 +172,32 @@
 </template>
 
 <script setup lang="ts">
-// Vue 3のComposition APIから必要な関数をインポート：リアクティブ参照、マウント時処理、ウォッチャー
-import { ref, onMounted, watch } from 'vue'
-// Vue Routerからルーター機能をインポート：ページ遷移制御
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
-// 認証機能のカスタムコンポーザブルをインポート：ユーザー認証状態管理
 import { useAuth } from '@/composables/useAuth'
-// 画像アップロード機能のカスタムコンポーザブルをインポート
 import { useImageUpload } from '@/composables/useImageUpload'
-// TipTapエディターコンポーネントをインポート
+import { useDraft } from '@/composables/useDraft'
 import TipTapEditor from '@/components/TipTapEditor.vue'
-// Supabaseクライアントをインポート：データベース操作
 import { supabase } from '@/lib/supabase'
-// Supabaseデータベースの型定義をインポート：TypeScript型安全性確保
 import type { Database } from '@/lib/supabase'
 
 // カテゴリテーブルの行型を定義：データベーススキーマに基づく型安全性
 type Category = Database['public']['Tables']['categories']['Row']
 
-// ルーターインスタンスを取得：ページ遷移機能の利用
 const router = useRouter()
-// 認証状態からユーザー情報を取得：現在ログイン中のユーザー情報
 const { user } = useAuth()
+const { draftData, isDraftAvailable, startAutoSave, stopAutoSave, clearDraft, restoreDraft } = useDraft('post_create', {
+  title: '',
+  content: '',
+  excerpt: '',
+  published: false
+})
 
-// フォームデータのリアクティブ参照を定義：入力値の双方向バインディング
 const form = ref({
-  title: '', // 投稿タイトル：文字列型、初期値空文字
-  content: null, // 投稿内容：TipTap JSON形式、初期値null
-  excerpt: '', // 投稿概要：文字列型、初期値空文字
-  published: true // 公開状態：真偽値型、初期値true（公開）
+  title: draftData.value.title || '',
+  content: draftData.value.content || null,
+  excerpt: draftData.value.excerpt || '',
+  published: draftData.value.published || true
 })
 
 // カテゴリ一覧のリアクティブ参照を定義：データベースから取得したカテゴリリスト
@@ -300,6 +302,7 @@ const handleSubmit = async () => {
     }
     
     // 作成された投稿の詳細ページに遷移：成功時のリダイレクト
+    clearDraft()
     router.push(`/posts/${post.id}`)
   } catch (error) {
     // 例外発生時はコンソールにエラー出力：デバッグ用ログ、スタックトレース付き
@@ -312,38 +315,45 @@ const handleSubmit = async () => {
   }
 }
 
-// コンポーネントマウント時に実行される非同期関数：初期化処理
 onMounted(async () => {
-  // 認証状態が確立されるまで待機するPromiseを作成：非同期認証状態確認
   await new Promise(resolve => {
-    // ユーザーが既に認証済みの場合は即座に解決：既存認証状態チェック
     if (user.value) {
       resolve(true)
       return
     }
-    // ユーザー状態の変化を監視するウォッチャーを設定：リアクティブ監視
     const unwatch = watch(user, (newUser) => {
-      // 新しいユーザーが設定された場合はウォッチャーを解除してPromiseを解決
       if (newUser) {
-        unwatch() // ウォッチャーの解除：メモリリーク防止
-        resolve(true) // Promise解決：認証成功
+        unwatch()
+        resolve(true)
       }
-    }, { immediate: true }) // 即座に現在の値をチェック：初期値確認
+    }, { immediate: true })
     
-    // 最大3秒待機してもユーザーが見つからない場合はログインページへリダイレクト
     setTimeout(() => {
-      // ユーザーが未認証の場合はウォッチャーを解除、ログインページに遷移、Promiseを解決
       if (!user.value) {
-        unwatch() // ウォッチャーの解除：メモリリーク防止
-        router.push('/login') // ログインページへリダイレクト：認証要求
-        resolve(false) // Promise解決：認証失敗
+        unwatch()
+        router.push('/login')
+        resolve(false)
       }
-    }, 3000) // 3秒のタイムアウト設定：認証待機時間制限
+    }, 3000)
   })
   
-  // ユーザーが認証済みの場合はカテゴリを読み込み：認証成功後の初期データ取得
   if (user.value) {
     await loadCategories()
   }
+  
+  if (isDraftAvailable.value) {
+    restoreDraft()
+    form.value = {
+      title: draftData.value.title || '',
+      content: draftData.value.content || null,
+      excerpt: draftData.value.excerpt || '',
+      published: draftData.value.published || true
+    }
+  }
+  startAutoSave()
+})
+
+onBeforeUnmount(() => {
+  stopAutoSave()
 })
 </script>

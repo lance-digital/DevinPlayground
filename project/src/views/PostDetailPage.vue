@@ -66,12 +66,12 @@
         
         <!-- カバー画像（存在する場合のみ表示） -->
         <div 
-          v-if="post.cover_image_path"
+          v-if="post.cover_image_url"
           class="w-full h-64 bg-surface-accent rounded-md mb-6 overflow-hidden"
         >
           <!-- カバー画像 -->
           <img 
-            :src="getImageUrl(post.cover_image_path)"
+            :src="post.cover_image_url"
             :alt="post.title"
             class="w-full h-full object-cover"
           />
@@ -82,8 +82,10 @@
           data-testid="投稿詳細-内容"
           class="mb-6"
         >
-          <div v-if="typeof post.content === 'string'" v-html="renderContent(post.content)"></div>
-          <TipTapDisplay v-else :content="post.content" />
+          <TipTapDisplay 
+            :content="post.content"
+            data-testid="投稿詳細-内容表示"
+          />
         </div>
         
         <!-- カテゴリタグ（存在する場合のみ表示） -->

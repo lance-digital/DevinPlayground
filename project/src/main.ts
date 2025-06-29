@@ -2,9 +2,9 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router/router'
+import { useAuth } from './composables/useAuth'
 
-// 存在するCSSファイルのみをインポート
-import './assets/main.css'       // Tailwindとカスタムスタイルはすでにこのファイルに含まれています
+import './assets/main.css'
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -12,4 +12,7 @@ const pinia = createPinia()
 app.use(pinia)
 app.use(router)
 
-app.mount('#app') 
+const { initAuth } = useAuth()
+await initAuth()
+
+app.mount('#app')     

@@ -24,11 +24,21 @@
       
       <!-- フィルター部分：カテゴリと並び順の選択 -->
       <div class="mb-6 flex flex-wrap gap-4">
+        <!-- 検索入力フィールド -->
+        <input
+          data-testid="投稿一覧-検索入力"
+          v-model="searchQuery"
+          @input="applyFilters"
+          type="text"
+          placeholder="投稿を検索..."
+          class="px-3 py-2 bg-surface-variant border border-border rounded-md text-text focus:outline-none focus:ring-2 focus:ring-primary"
+        />
+        
         <!-- カテゴリフィルター選択ボックス -->
         <select
           data-testid="投稿一覧-カテゴリフィルター"
           v-model="selectedCategory"
-          @change="loadPosts"
+          @change="applyFilters"
           class="px-3 py-2 bg-surface-variant border border-border rounded-md text-text focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <!-- すべてのカテゴリを表示するオプション -->
@@ -37,7 +47,7 @@
           <option 
             v-for="category in categories" 
             :key="category.id" 
-            :value="category.id"
+            :value="category.name"
           >
             {{ category.name }}
           </option>
@@ -46,16 +56,14 @@
         <!-- 並び順フィルター選択ボックス -->
         <select
           data-testid="投稿一覧-並び順フィルター"
-          v-model="sortOrder"
-          @change="loadPosts"
+          v-model="sortBy"
+          @change="applyFilters"
           class="px-3 py-2 bg-surface-variant border border-border rounded-md text-text focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <!-- 新しい順オプション -->
-          <option value="created_at_desc">新しい順</option>
+          <option value="newest">新しい順</option>
           <!-- 古い順オプション -->
-          <option value="created_at_asc">古い順</option>
-          <!-- タイトル順オプション -->
-          <option value="title_asc">タイトル順</option>
+          <option value="oldest">古い順</option>
         </select>
       </div>
       
@@ -69,7 +77,7 @@
       
       <!-- 投稿が存在しない場合の表示 -->
       <div 
-        v-else-if="posts.length === 0"
+        v-else-if="filteredPosts.length === 0"
         class="text-center text-text-muted"
       >
         投稿がありません
@@ -83,8 +91,9 @@
       >
         <!-- 各投稿のカード -->
         <article 
-          v-for="post in posts" 
+          v-for="post in filteredPosts" 
           :key="post.id"
+          :data-testid="`投稿一覧-投稿-${post.id}`"
           class="glass-card hover:shadow-lg transition-shadow cursor-pointer"
           @click="navigateToPost(post.id)"
         >
@@ -166,14 +175,20 @@ const router = useRouter()
 
 // 投稿一覧のリアクティブ配列
 const posts = ref<Post[]>([])
+// フィルタされた投稿一覧のリアクティブ配列
+const filteredPosts = ref<Post[]>([])
 // カテゴリ一覧のリアクティブ配列
 const categories = ref<Category[]>([])
 // ローディング状態のリアクティブ変数
 const loading = ref(false)
-// 選択されたカテゴリIDのリアクティブ変数
+// エラーメッセージのリアクティブ変数
+const errorMessage = ref('')
+// 選択されたカテゴリ名のリアクティブ変数
 const selectedCategory = ref('')
+// 検索クエリのリアクティブ変数
+const searchQuery = ref('')
 // 並び順のリアクティブ変数
-const sortOrder = ref('created_at_desc')
+const sortBy = ref('newest')
 
 // 投稿一覧を読み込む非同期関数
 const loadPosts = async () => {
@@ -181,7 +196,7 @@ const loadPosts = async () => {
   loading.value = true
   try {
     // Supabaseクエリの基本構造を構築
-    let query = supabase
+    const { data, error } = await supabase
       .from('posts')
       .select(`
         *,
@@ -191,21 +206,7 @@ const loadPosts = async () => {
         )
       `)
       .eq('published', true)
-    
-    // カテゴリが選択されている場合のフィルタリング
-    if (selectedCategory.value) {
-      query = query.contains('post_categories.category_id', [selectedCategory.value])
-    }
-    
-    // 並び順の設定を解析
-    const [orderField, orderDirection] = sortOrder.value.split('_')
-    // 実際のフィールド名に変換
-    const actualOrderField = orderField === 'created' ? 'created_at' : orderField
-    // 並び順をクエリに適用
-    query = query.order(actualOrderField, { ascending: orderDirection === 'asc' })
-    
-    // クエリを実行
-    const { data, error } = await query
+      .order('created_at', { ascending: false })
     
     // エラーが発生した場合は例外をスロー
     if (error) throw error
@@ -215,12 +216,39 @@ const loadPosts = async () => {
       ...post,
       categories: post.post_categories?.map(pc => pc.categories).filter(Boolean) || []
     }))
+    
+    // フィルタを適用
+    applyFilters()
   } catch (error) {
     // エラーをコンソールに出力
     console.error('Posts load error:', error instanceof Error ? error.stack : error)
   } finally {
     // ローディング状態を終了
     loading.value = false
+  }
+}
+
+// フィルタを適用する関数
+const applyFilters = () => {
+  // 投稿一覧をフィルタリング
+  filteredPosts.value = posts.value.filter(post => {
+    // カテゴリフィルタの適用
+    const matchesCategory = !selectedCategory.value || 
+      post.categories?.some(cat => cat.name === selectedCategory.value)
+    
+    // 検索フィルタの適用
+    const matchesSearch = !searchQuery.value || 
+      post.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      (typeof post.content === 'string' && post.content.toLowerCase().includes(searchQuery.value.toLowerCase()))
+    
+    return matchesCategory && matchesSearch
+  })
+
+  // ソート順の適用
+  if (sortBy.value === 'newest') {
+    filteredPosts.value.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  } else if (sortBy.value === 'oldest') {
+    filteredPosts.value.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
   }
 }
 

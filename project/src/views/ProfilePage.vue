@@ -18,9 +18,15 @@
         >
           <!-- ユーザー基本情報の表示エリア -->
           <div class="flex items-center space-x-4">
-            <!-- アバター表示（ニックネームの頭文字） -->
-            <div class="w-20 h-20 bg-surface-accent rounded-full flex items-center justify-center">
-              <span class="text-2xl text-text">
+            <!-- アバター表示（プロフィール画像またはニックネームの頭文字） -->
+            <div class="w-20 h-20 bg-surface-accent rounded-full flex items-center justify-center overflow-hidden">
+              <img 
+                v-if="profile?.avatar_url" 
+                :src="profile.avatar_url" 
+                :alt="profile.nickname"
+                class="w-full h-full object-cover"
+              />
+              <span v-else class="text-2xl text-text">
                 {{ profile?.nickname?.charAt(0) || 'U' }}
               </span>
             </div>
@@ -75,6 +81,24 @@
           @submit.prevent="handleUpdate"
           class="space-y-4"
         >
+          <!-- プロフィール画像入力フィールド -->
+          <div>
+            <label for="avatar" class="block text-text-muted text-sm font-medium mb-2">
+              プロフィール画像
+            </label>
+            <input
+              id="avatar"
+              type="file"
+              accept="image/*"
+              @change="handleAvatarUpload"
+              data-testid="プロフィール管理-画像入力"
+              class="w-full px-3 py-2 bg-surface-variant border border-border rounded-md text-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            />
+            <div v-if="avatarUploading" class="mt-2 text-sm text-primary">
+              プロフィール画像をアップロード中...
+            </div>
+          </div>
+
           <!-- ニックネーム入力フィールド -->
           <div>
             <!-- ニックネームラベル -->
@@ -135,7 +159,7 @@
             <button
               data-testid="プロフィール管理-保存ボタン"
               type="submit"
-              :disabled="loading"
+              :disabled="loading || avatarUploading"
               class="btn btn-primary"
             >
               {{ loading ? '保存中...' : '保存' }}
@@ -161,11 +185,15 @@
 import { ref, onMounted } from 'vue'
 // 認証関連のコンポーザブルをインポート
 import { useAuth } from '@/composables/useAuth'
+// 画像アップロード機能のカスタムコンポーザブルをインポート
+import { useImageUpload } from '@/composables/useImageUpload'
 // Supabaseクライアントをインポート
 import { supabase } from '@/lib/supabase'
 
 // 認証コンポーザブルからプロフィール情報とロード関数を取得
-const { profile, loadProfile } = useAuth()
+const { profile, loadProfile, user } = useAuth()
+// 画像アップロード機能を取得
+const { uploadProfileImage, uploading: avatarUploading, error: imageError } = useImageUpload()
 
 // 編集モードの状態を管理するリアクティブ変数
 const isEditing = ref(false)
@@ -201,6 +229,26 @@ const cancelEditing = () => {
   // メッセージをクリア
   errorMessage.value = ''
   successMessage.value = ''
+}
+
+// プロフィール画像アップロードを処理する非同期関数
+const handleAvatarUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  
+  if (file && user.value) {
+    const imageUrl = await uploadProfileImage(file, user.value.id)
+    if (imageUrl) {
+      await supabase
+        .from('profiles')
+        .update({ avatar_url: imageUrl })
+        .eq('id', user.value.id)
+      
+      await loadProfile()
+    } else if (imageError.value) {
+      errorMessage.value = imageError.value
+    }
+  }
 }
 
 // プロフィール更新を処理する非同期関数

@@ -29,14 +29,14 @@ const router = createRouter({
       component: () => import('../views/PostListPage.vue')
     },
     {
-      path: '/posts/:id',
-      name: 'PostDetail',
-      component: () => import('../views/PostDetailPage.vue')
-    },
-    {
       path: '/posts/create',
       name: 'PostCreate',
       component: () => import('../views/PostCreatePage.vue')
+    },
+    {
+      path: '/posts/:id',
+      name: 'PostDetail',
+      component: () => import('../views/PostDetailPage.vue')
     },
     {
       path: '/posts/:id/edit',

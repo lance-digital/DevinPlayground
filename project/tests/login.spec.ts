@@ -35,7 +35,7 @@ test.describe('ログインユニット', () => {
     await expect(submitButton).toHaveText(/.+/, { timeout: 3000 })
   })
 
-  test('有効な認証情報でログインを試行するとネットワークエラーが表示される', async ({ page }) => {
+  test('有効な認証情報でログインを試行するとパスワードエラーが表示される', async ({ page }) => {
     await page.waitForFunction(() => {
       const identifierInput = document.querySelector('[data-testid="ログイン-識別子入力"]')
       return identifierInput && !identifierInput.hasAttribute('disabled')

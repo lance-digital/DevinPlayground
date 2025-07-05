@@ -173,6 +173,23 @@
         "command": "tokenCounter.showFileHistory",
         "title": "Show File History",
         "icon": "$(history)"
+      },
+      {
+        "command": "tokenCounter.selectItem",
+        "title": "Select Item"
+      },
+      {
+        "command": "tokenCounter.selectMultiple",
+        "title": "Select Multiple Items"
+      },
+      {
+        "command": "tokenCounter.getSelectedItems",
+        "title": "Get Selected Items"
+      },
+      {
+        "command": "tokenCounter.deleteSelected",
+        "title": "Delete Selected Items",
+        "icon": "$(trash)"
       }
     ],
     "menus": {
@@ -313,6 +330,11 @@
           "command": "tokenCounter.goToFile",
           "when": "view == tokenCounterExplorer",
           "group": "7_search@2"
+        },
+        {
+          "command": "tokenCounter.deleteSelected",
+          "when": "view == tokenCounterExplorer",
+          "group": "2_file@6"
         }
       ]
     },

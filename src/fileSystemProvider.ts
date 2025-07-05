@@ -208,6 +208,12 @@ export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<E
         
         treeItem.resourceUri = element.uri;
         
+        const isSelected = this.isSelected(element.uri.fsPath);
+        treeItem.contextValue = element.type === vscode.FileType.Directory ? 'folder' : 'file';
+        if (isSelected) {
+            treeItem.contextValue += '_selected';
+        }
+        
         let tooltip = '';
         if (element.tokenCount) {
             tooltip += `${element.tokenCount.toLocaleString()} ${tokenSuffix}`;
@@ -222,16 +228,22 @@ export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<E
         }
         tooltip += tooltip ? '\n' : '';
         tooltip += `Path: ${element.uri.fsPath}`;
+        if (isSelected) {
+            tooltip += '\n[Selected]';
+        }
         
         treeItem.tooltip = tooltip;
-        treeItem.contextValue = element.type === vscode.FileType.Directory ? 'folder' : 'file';
         
         if (element.type === vscode.FileType.File) {
+            const ext = path.extname(element.uri.fsPath).toLowerCase();
+            treeItem.iconPath = this.getFileIcon(ext);
             treeItem.command = {
                 command: 'vscode.open',
                 title: 'Open File',
                 arguments: [element.uri]
             };
+        } else {
+            treeItem.iconPath = new vscode.ThemeIcon('folder');
         }
         
         return treeItem;
@@ -577,5 +589,82 @@ export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<E
 
     isSelected(uri: string): boolean {
         return this.selectedItems.has(uri);
+    }
+
+    private getFileIcon(extension: string): vscode.ThemeIcon {
+        const iconMap: { [key: string]: string } = {
+            '.js': 'symbol-method',
+            '.ts': 'symbol-method',
+            '.jsx': 'symbol-method',
+            '.tsx': 'symbol-method',
+            '.py': 'symbol-method',
+            '.html': 'symbol-property',
+            '.css': 'symbol-color',
+            '.scss': 'symbol-color',
+            '.less': 'symbol-color',
+            '.json': 'symbol-property',
+            '.md': 'markdown',
+            '.txt': 'symbol-text',
+            '.vue': 'symbol-method',
+            '.svelte': 'symbol-method',
+            '.php': 'symbol-method',
+            '.rb': 'symbol-method',
+            '.go': 'symbol-method',
+            '.rs': 'symbol-method',
+            '.java': 'symbol-method',
+            '.c': 'symbol-method',
+            '.cpp': 'symbol-method',
+            '.h': 'symbol-method',
+            '.hpp': 'symbol-method',
+            '.xml': 'symbol-property',
+            '.yaml': 'symbol-property',
+            '.yml': 'symbol-property',
+            '.toml': 'symbol-property',
+            '.ini': 'symbol-property',
+            '.cfg': 'symbol-property',
+            '.conf': 'symbol-property',
+            '.log': 'output',
+            '.png': 'file-media',
+            '.jpg': 'file-media',
+            '.jpeg': 'file-media',
+            '.gif': 'file-media',
+            '.svg': 'file-media',
+            '.pdf': 'file-pdf',
+            '.zip': 'file-zip',
+            '.tar': 'file-zip',
+            '.gz': 'file-zip',
+            '.rar': 'file-zip'
+        };
+        
+        return new vscode.ThemeIcon(iconMap[extension] || 'file');
+    }
+
+    async selectMultiple(uris: string[], extend: boolean = false) {
+        if (!extend) {
+            this.clearSelection();
+        }
+        
+        for (const uri of uris) {
+            this.selectedItems.add(uri);
+        }
+        
+        if (uris.length > 0) {
+            this.lastSelectedItem = uris[uris.length - 1];
+        }
+        
+        this._onDidChangeTreeData.fire(undefined);
+    }
+
+    async handleMultiSelect(uri: string, ctrlKey: boolean, shiftKey: boolean) {
+        if (shiftKey && this.lastSelectedItem) {
+            this.selectRange(this.lastSelectedItem, uri);
+        } else if (ctrlKey) {
+            this.toggleSelection(uri);
+        } else {
+            this.clearSelection();
+            this.selectItem(uri);
+        }
+        
+        this._onDidChangeTreeData.fire(undefined);
     }
 }

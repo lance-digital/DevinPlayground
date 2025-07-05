@@ -405,6 +405,53 @@ export function activate(context: vscode.ExtensionContext) {
             }
         });
         context.subscriptions.push(showFileHistoryCommand);
+
+        const selectItemCommand = vscode.commands.registerCommand('tokenCounter.selectItem', async (node: any, ctrlKey: boolean = false, shiftKey: boolean = false) => {
+            if (!node) return;
+            await provider.handleMultiSelect(node.uri.fsPath, ctrlKey, shiftKey);
+        });
+        context.subscriptions.push(selectItemCommand);
+
+        const selectMultipleCommand = vscode.commands.registerCommand('tokenCounter.selectMultiple', async (nodes: any[]) => {
+            if (!nodes || nodes.length === 0) return;
+            const uris = nodes.map(node => node.uri.fsPath);
+            await provider.selectMultiple(uris, false);
+        });
+        context.subscriptions.push(selectMultipleCommand);
+
+        const getSelectedItemsCommand = vscode.commands.registerCommand('tokenCounter.getSelectedItems', () => {
+            return provider.getSelectedItems();
+        });
+        context.subscriptions.push(getSelectedItemsCommand);
+
+        const deleteSelectedCommand = vscode.commands.registerCommand('tokenCounter.deleteSelected', async () => {
+            const selectedItems = provider.getSelectedItems();
+            if (selectedItems.length === 0) {
+                vscode.window.showWarningMessage('No items selected');
+                return;
+            }
+
+            const result = await vscode.window.showWarningMessage(
+                `Are you sure you want to delete ${selectedItems.length} item(s)?`,
+                { modal: true },
+                'Delete'
+            );
+
+            if (result === 'Delete') {
+                for (const itemPath of selectedItems) {
+                    try {
+                        const uri = vscode.Uri.file(itemPath);
+                        await vscode.workspace.fs.delete(uri, { recursive: true, useTrash: true });
+                    } catch (error) {
+                        vscode.window.showErrorMessage(`Failed to delete ${itemPath}: ${error}`);
+                    }
+                }
+                provider.clearSelection();
+                provider.refresh();
+                vscode.window.showInformationMessage(`Deleted ${selectedItems.length} item(s)`);
+            }
+        });
+        context.subscriptions.push(deleteSelectedCommand);
         
         const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*');
         fileWatcher.onDidChange(uri => {

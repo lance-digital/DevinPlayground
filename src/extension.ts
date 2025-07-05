@@ -863,6 +863,114 @@ export function activate(context: vscode.ExtensionContext) {
             }
         });
         context.subscriptions.push(openInIntegratedTerminalCommand);
+
+        const gitStageChangesCommand = vscode.commands.registerCommand('tokenCounter.gitStageChanges', async (node: any) => {
+            if (!node) return;
+            try {
+                const workspaceFolder = vscode.workspace.getWorkspaceFolder(node.uri);
+                if (!workspaceFolder) {
+                    vscode.window.showErrorMessage('ワークスペースフォルダが見つかりません');
+                    return;
+                }
+                
+                const relativePath = path.relative(workspaceFolder.uri.fsPath, node.uri.fsPath);
+                const terminal = vscode.window.createTerminal({
+                    name: 'Git Stage',
+                    cwd: workspaceFolder.uri.fsPath
+                });
+                terminal.sendText(`git add "${relativePath}"`);
+                terminal.show();
+                
+                vscode.window.showInformationMessage(`ステージしました: ${path.basename(node.uri.fsPath)}`);
+                
+                setTimeout(() => {
+                    provider.refresh();
+                }, 1000);
+            } catch (error) {
+                vscode.window.showErrorMessage(`ステージに失敗しました: ${error}`);
+            }
+        });
+        context.subscriptions.push(gitStageChangesCommand);
+
+        const gitUnstageChangesCommand = vscode.commands.registerCommand('tokenCounter.gitUnstageChanges', async (node: any) => {
+            if (!node) return;
+            try {
+                const workspaceFolder = vscode.workspace.getWorkspaceFolder(node.uri);
+                if (!workspaceFolder) {
+                    vscode.window.showErrorMessage('ワークスペースフォルダが見つかりません');
+                    return;
+                }
+                
+                const relativePath = path.relative(workspaceFolder.uri.fsPath, node.uri.fsPath);
+                const terminal = vscode.window.createTerminal({
+                    name: 'Git Unstage',
+                    cwd: workspaceFolder.uri.fsPath
+                });
+                terminal.sendText(`git reset HEAD "${relativePath}"`);
+                terminal.show();
+                
+                vscode.window.showInformationMessage(`アンステージしました: ${path.basename(node.uri.fsPath)}`);
+                
+                setTimeout(() => {
+                    provider.refresh();
+                }, 1000);
+            } catch (error) {
+                vscode.window.showErrorMessage(`アンステージに失敗しました: ${error}`);
+            }
+        });
+        context.subscriptions.push(gitUnstageChangesCommand);
+
+        const gitDiscardChangesCommand = vscode.commands.registerCommand('tokenCounter.gitDiscardChanges', async (node: any) => {
+            if (!node) return;
+            try {
+                const result = await vscode.window.showWarningMessage(
+                    `${path.basename(node.uri.fsPath)}の変更を破棄しますか？この操作は元に戻せません。`,
+                    { modal: true },
+                    'はい', 'いいえ'
+                );
+                
+                if (result !== 'はい') return;
+                
+                const workspaceFolder = vscode.workspace.getWorkspaceFolder(node.uri);
+                if (!workspaceFolder) {
+                    vscode.window.showErrorMessage('ワークスペースフォルダが見つかりません');
+                    return;
+                }
+                
+                const relativePath = path.relative(workspaceFolder.uri.fsPath, node.uri.fsPath);
+                const terminal = vscode.window.createTerminal({
+                    name: 'Git Discard',
+                    cwd: workspaceFolder.uri.fsPath
+                });
+                terminal.sendText(`git checkout -- "${relativePath}"`);
+                terminal.show();
+                
+                vscode.window.showInformationMessage(`変更を破棄しました: ${path.basename(node.uri.fsPath)}`);
+                
+                setTimeout(() => {
+                    provider.refresh();
+                }, 1000);
+            } catch (error) {
+                vscode.window.showErrorMessage(`変更の破棄に失敗しました: ${error}`);
+            }
+        });
+        context.subscriptions.push(gitDiscardChangesCommand);
+
+        const gitViewChangesCommand = vscode.commands.registerCommand('tokenCounter.gitViewChanges', async (node: any) => {
+            if (!node) return;
+            try {
+                const workspaceFolder = vscode.workspace.getWorkspaceFolder(node.uri);
+                if (!workspaceFolder) {
+                    vscode.window.showErrorMessage('ワークスペースフォルダが見つかりません');
+                    return;
+                }
+                
+                await vscode.commands.executeCommand('git.openChange', node.uri);
+            } catch (error) {
+                vscode.window.showErrorMessage(`変更の表示に失敗しました: ${error}`);
+            }
+        });
+        context.subscriptions.push(gitViewChangesCommand);
         
         let refreshTimeout: NodeJS.Timeout | undefined;
         const debouncedRefresh = (uri: vscode.Uri, changeType: string) => {

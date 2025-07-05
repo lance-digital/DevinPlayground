@@ -235,6 +235,26 @@
         "command": "tokenCounter.openInIntegratedTerminal",
         "title": "Open in Integrated Terminal",
         "icon": "$(terminal)"
+      },
+      {
+        "command": "tokenCounter.gitStageChanges",
+        "title": "Stage Changes",
+        "icon": "$(add)"
+      },
+      {
+        "command": "tokenCounter.gitUnstageChanges",
+        "title": "Unstage Changes",
+        "icon": "$(remove)"
+      },
+      {
+        "command": "tokenCounter.gitDiscardChanges",
+        "title": "Discard Changes",
+        "icon": "$(discard)"
+      },
+      {
+        "command": "tokenCounter.gitViewChanges",
+        "title": "View Changes",
+        "icon": "$(diff)"
       }
     ],
     "menus": {
@@ -400,6 +420,26 @@
           "command": "tokenCounter.openInIntegratedTerminal",
           "when": "view == tokenCounterExplorer && viewItem == folder",
           "group": "8_window@3"
+        },
+        {
+          "command": "tokenCounter.gitStageChanges",
+          "when": "view == tokenCounterExplorer && viewItem && gitOpenRepositoryCount != 0",
+          "group": "git@1"
+        },
+        {
+          "command": "tokenCounter.gitUnstageChanges",
+          "when": "view == tokenCounterExplorer && viewItem && gitOpenRepositoryCount != 0",
+          "group": "git@2"
+        },
+        {
+          "command": "tokenCounter.gitDiscardChanges",
+          "when": "view == tokenCounterExplorer && viewItem && gitOpenRepositoryCount != 0",
+          "group": "git@3"
+        },
+        {
+          "command": "tokenCounter.gitViewChanges",
+          "when": "view == tokenCounterExplorer && viewItem && gitOpenRepositoryCount != 0",
+          "group": "git@4"
         }
       ]
     },
@@ -513,6 +553,16 @@
         "command": "tokenCounter.expandAll",
         "key": "ctrl+shift+right",
         "when": "view == tokenCounterExplorer"
+      },
+      {
+        "command": "tokenCounter.gitStageChanges",
+        "key": "ctrl+shift+a",
+        "when": "view == tokenCounterExplorer && viewItem && gitOpenRepositoryCount != 0"
+      },
+      {
+        "command": "tokenCounter.gitDiscardChanges",
+        "key": "ctrl+shift+z",
+        "when": "view == tokenCounterExplorer && viewItem && gitOpenRepositoryCount != 0"
       }
     ],
     "configuration": {

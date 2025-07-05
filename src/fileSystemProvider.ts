@@ -388,10 +388,23 @@ export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<E
             return 0;
         }
         
-        const words = text.split(/\s+/).filter(word => word.length > 0);
-        const tokenEstimate = Math.ceil(words.length * 1.3);
-        
-        return tokenEstimate;
+        try {
+            const { encoding_for_model } = require('tiktoken');
+            const encoding = encoding_for_model('gpt-3.5-turbo');
+            const tokens = encoding.encode(text);
+            encoding.free();
+            return tokens.length;
+        } catch (error) {
+            console.warn('tiktoken not available, falling back to word-based estimation:', error);
+            
+            const words = text.split(/\s+/).filter(word => word.length > 0);
+            const characters = text.length;
+            
+            const charBasedEstimate = Math.ceil(characters / 4);
+            const wordBasedEstimate = Math.ceil(words.length * 1.3);
+            
+            return Math.max(charBasedEstimate, wordBasedEstimate);
+        }
     }
 
     private formatTokenCount(count: number): string {

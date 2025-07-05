@@ -367,16 +367,29 @@ export function activate(context: vscode.ExtensionContext) {
         context.subscriptions.push(openInNewWindowCommand);
 
         const searchFilesCommand = vscode.commands.registerCommand('tokenCounter.searchFiles', async () => {
+            const currentSearch = provider.getSearchTerm();
             const searchTerm = await vscode.window.showInputBox({
-                prompt: 'Search files by name',
-                placeHolder: 'Enter search term...'
+                prompt: 'ファイル名を検索（ファジー検索対応）',
+                placeHolder: 'ファイル名またはパターンを入力...',
+                value: currentSearch
             });
             if (searchTerm !== undefined) {
-                provider.setFilter(searchTerm);
-                vscode.window.showInformationMessage(searchTerm ? `Searching: ${searchTerm}` : 'Search cleared');
+                if (searchTerm.trim() === '') {
+                    provider.clearSearch();
+                    vscode.window.showInformationMessage('検索をクリアしました');
+                } else {
+                    provider.setSearchTerm(searchTerm);
+                    vscode.window.showInformationMessage(`検索中: ${searchTerm}`);
+                }
             }
         });
         context.subscriptions.push(searchFilesCommand);
+
+        const clearSearchCommand = vscode.commands.registerCommand('tokenCounter.clearSearch', () => {
+            provider.clearSearch();
+            vscode.window.showInformationMessage('検索をクリアしました');
+        });
+        context.subscriptions.push(clearSearchCommand);
 
         const findInFilesCommand = vscode.commands.registerCommand('tokenCounter.findInFiles', async () => {
             try {

@@ -22,6 +22,8 @@ export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<E
     private sortMode: 'name' | 'size' | 'date' | 'tokens' = 'name';
     private sortDirection: 'asc' | 'desc' = 'asc';
     private filter: string = '';
+    private searchTerm: string = '';
+    private searchActive: boolean = false;
     private expandedFolders: Set<string> = new Set();
     private selectedItems: Set<string> = new Set();
     private lastSelectedItem: string | null = null;
@@ -452,7 +454,9 @@ export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<E
     private sortAndFilterEntries(entries: Entry[]): Entry[] {
         let filtered = entries;
         
-        if (this.filter) {
+        if (this.searchTerm && this.searchActive) {
+            filtered = this.applySearchFilter(entries, this.searchTerm);
+        } else if (this.filter) {
             const filterPattern = this.filter.toLowerCase().replace(/\*/g, '.*');
             const regex = new RegExp(filterPattern);
             filtered = entries.filter(entry => {
@@ -674,5 +678,44 @@ export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<E
         }
         
         this._onDidChangeTreeData.fire(undefined);
+    }
+
+    private applySearchFilter(entries: Entry[], searchTerm: string): Entry[] {
+        const lowerSearchTerm = searchTerm.toLowerCase();
+        
+        return entries.filter(entry => {
+            const name = path.basename(entry.uri.fsPath).toLowerCase();
+            
+            if (name.includes(lowerSearchTerm)) {
+                return true;
+            }
+            
+            let searchIndex = 0;
+            for (let i = 0; i < name.length && searchIndex < lowerSearchTerm.length; i++) {
+                if (name[i] === lowerSearchTerm[searchIndex]) {
+                    searchIndex++;
+                }
+            }
+            
+            return searchIndex === lowerSearchTerm.length;
+        });
+    }
+
+    setSearchTerm(searchTerm: string) {
+        this.searchTerm = searchTerm;
+        this.searchActive = searchTerm.length > 0;
+        vscode.commands.executeCommand('setContext', 'tokenCounter.hasActiveSearch', this.searchActive);
+        this.refresh();
+    }
+
+    clearSearch() {
+        this.searchTerm = '';
+        this.searchActive = false;
+        vscode.commands.executeCommand('setContext', 'tokenCounter.hasActiveSearch', false);
+        this.refresh();
+    }
+
+    getSearchTerm(): string {
+        return this.searchTerm;
     }
 }

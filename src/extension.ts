@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { TokenCounterFileSystemProvider } from './fileSystemProvider';
-import { GitStatusProvider } from './gitStatusProvider';
+// import { GitStatusProvider } from './gitStatusProvider';
 
 export function activate(context: vscode.ExtensionContext) {
     try {
@@ -21,10 +21,10 @@ export function activate(context: vscode.ExtensionContext) {
         context.subscriptions.push(treeView);
         console.log('✅ [ACTIVATION] TreeView registered');
         
-        const gitStatusProvider = new GitStatusProvider();
-        const gitDecorationProvider = vscode.window.registerFileDecorationProvider(gitStatusProvider);
-        context.subscriptions.push(gitDecorationProvider);
-        console.log('✅ [ACTIVATION] Git status decoration provider registered');
+        // const gitStatusProvider = new GitStatusProvider();
+        // const gitDecorationProvider = vscode.window.registerFileDecorationProvider(gitStatusProvider);
+        // context.subscriptions.push(gitDecorationProvider);
+        // console.log('✅ [ACTIVATION] Git status decoration provider registered');
         
         const refreshCommand = vscode.commands.registerCommand('tokenCounter.refresh', async () => {
             console.log('🔄 [COMMAND] Manual refresh command triggered');
@@ -452,6 +452,59 @@ export function activate(context: vscode.ExtensionContext) {
             }
         });
         context.subscriptions.push(deleteSelectedCommand);
+
+        const showFilePropertiesCommand = vscode.commands.registerCommand('tokenCounter.showFileProperties', async (node: any) => {
+            if (!node) return;
+            
+            try {
+                const stat = await vscode.workspace.fs.stat(node.uri);
+                const relativePath = vscode.workspace.asRelativePath(node.uri);
+                const tokenCount = await provider.getTokenCountPublic(node.uri, stat.type);
+                
+                let message = `File: ${path.basename(node.uri.fsPath)}\n`;
+                message += `Path: ${relativePath}\n`;
+                message += `Full Path: ${node.uri.fsPath}\n`;
+                message += `Size: ${provider.formatFileSizePublic(stat.size)}\n`;
+                message += `Modified: ${new Date(stat.mtime).toLocaleString()}\n`;
+                message += `Created: ${new Date(stat.ctime).toLocaleString()}\n`;
+                if (tokenCount > 0) {
+                    message += `Token Count: ${tokenCount.toLocaleString()}\n`;
+                }
+                message += `Type: ${stat.type === vscode.FileType.Directory ? 'Folder' : 'File'}\n`;
+                
+                vscode.window.showInformationMessage(message, { modal: true });
+            } catch (error) {
+                vscode.window.showErrorMessage(`Failed to get file properties: ${error}`);
+            }
+        });
+        context.subscriptions.push(showFilePropertiesCommand);
+
+
+        const revealInFileExplorerCommand = vscode.commands.registerCommand('tokenCounter.revealInFileExplorer', async (node: any) => {
+            if (!node) return;
+            
+            try {
+                await vscode.commands.executeCommand('revealFileInOS', node.uri);
+            } catch (error) {
+                vscode.window.showErrorMessage(`Failed to reveal in file explorer: ${error}`);
+            }
+        });
+        context.subscriptions.push(revealInFileExplorerCommand);
+
+        const openInIntegratedTerminalCommand = vscode.commands.registerCommand('tokenCounter.openInIntegratedTerminal', async (node: any) => {
+            if (!node) return;
+            
+            try {
+                const terminal = vscode.window.createTerminal({
+                    name: `Terminal - ${path.basename(node.uri.fsPath)}`,
+                    cwd: node.type === vscode.FileType.Directory ? node.uri.fsPath : path.dirname(node.uri.fsPath)
+                });
+                terminal.show();
+            } catch (error) {
+                vscode.window.showErrorMessage(`Failed to open terminal: ${error}`);
+            }
+        });
+        context.subscriptions.push(openInIntegratedTerminalCommand);
         
         const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*');
         fileWatcher.onDidChange(uri => {

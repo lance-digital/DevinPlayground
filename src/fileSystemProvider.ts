@@ -591,6 +591,14 @@ export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<E
         return this.selectedItems.has(uri);
     }
 
+    public formatFileSizePublic(bytes: number): string {
+        return this.formatFileSize(bytes);
+    }
+
+    public async getTokenCountPublic(uri: vscode.Uri, type: vscode.FileType): Promise<number> {
+        return await this.getTokenCount(uri, type);
+    }
+
     private getFileIcon(extension: string): vscode.ThemeIcon {
         const iconMap: { [key: string]: string } = {
             '.js': 'symbol-method',

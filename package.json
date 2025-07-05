@@ -190,6 +190,51 @@
         "command": "tokenCounter.deleteSelected",
         "title": "Delete Selected Items",
         "icon": "$(trash)"
+      },
+      {
+        "command": "tokenCounter.sortByName",
+        "title": "Sort by Name",
+        "icon": "$(symbol-text)"
+      },
+      {
+        "command": "tokenCounter.sortBySize",
+        "title": "Sort by Size",
+        "icon": "$(symbol-numeric)"
+      },
+      {
+        "command": "tokenCounter.sortByDate",
+        "title": "Sort by Date Modified",
+        "icon": "$(calendar)"
+      },
+      {
+        "command": "tokenCounter.sortByTokens",
+        "title": "Sort by Token Count",
+        "icon": "$(symbol-number)"
+      },
+      {
+        "command": "tokenCounter.toggleSortDirection",
+        "title": "Toggle Sort Direction",
+        "icon": "$(arrow-swap)"
+      },
+      {
+        "command": "tokenCounter.showFileProperties",
+        "title": "Properties",
+        "icon": "$(info)"
+      },
+      {
+        "command": "tokenCounter.openInNewWindow",
+        "title": "Open in New Window",
+        "icon": "$(window)"
+      },
+      {
+        "command": "tokenCounter.revealInFileExplorer",
+        "title": "Reveal in File Explorer",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "tokenCounter.openInIntegratedTerminal",
+        "title": "Open in Integrated Terminal",
+        "icon": "$(terminal)"
       }
     ],
     "menus": {
@@ -335,6 +380,26 @@
           "command": "tokenCounter.deleteSelected",
           "when": "view == tokenCounterExplorer",
           "group": "2_file@6"
+        },
+        {
+          "command": "tokenCounter.showFileProperties",
+          "when": "view == tokenCounterExplorer && viewItem",
+          "group": "9_properties@1"
+        },
+        {
+          "command": "tokenCounter.openInNewWindow",
+          "when": "view == tokenCounterExplorer && viewItem",
+          "group": "8_window@1"
+        },
+        {
+          "command": "tokenCounter.revealInFileExplorer",
+          "when": "view == tokenCounterExplorer && viewItem",
+          "group": "8_window@2"
+        },
+        {
+          "command": "tokenCounter.openInIntegratedTerminal",
+          "when": "view == tokenCounterExplorer && viewItem == folder",
+          "group": "8_window@3"
         }
       ]
     },

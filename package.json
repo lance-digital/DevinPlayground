@@ -450,6 +450,12 @@
         }
       ]
     },
+    "viewsWelcome": [
+      {
+        "view": "tokenCounterExplorer",
+        "contents": "ワークスペースにファイルが見つかりません。\n[新しいファイルを作成](command:tokenCounter.newFile)\n[新しいフォルダを作成](command:tokenCounter.newFolder)\n[ワークスペースを開く](command:workbench.action.files.openFolder)"
+      }
+    ],
     "keybindings": [
       {
         "command": "tokenCounter.rename",

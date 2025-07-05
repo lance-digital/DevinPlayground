@@ -153,6 +153,26 @@
         "command": "tokenCounter.openInNewWindow",
         "title": "Open in New Window",
         "icon": "$(window)"
+      },
+      {
+        "command": "tokenCounter.searchFiles",
+        "title": "Search Files",
+        "icon": "$(search)"
+      },
+      {
+        "command": "tokenCounter.findInFiles",
+        "title": "Find in Files",
+        "icon": "$(search-view-icon)"
+      },
+      {
+        "command": "tokenCounter.goToFile",
+        "title": "Go to File",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "tokenCounter.showFileHistory",
+        "title": "Show File History",
+        "icon": "$(history)"
       }
     ],
     "menus": {
@@ -278,6 +298,21 @@
           "command": "tokenCounter.toggleHiddenFiles",
           "when": "view == tokenCounterExplorer",
           "group": "navigation@5"
+        },
+        {
+          "command": "tokenCounter.searchFiles",
+          "when": "view == tokenCounterExplorer",
+          "group": "navigation@6"
+        },
+        {
+          "command": "tokenCounter.findInFiles",
+          "when": "view == tokenCounterExplorer",
+          "group": "7_search@1"
+        },
+        {
+          "command": "tokenCounter.goToFile",
+          "when": "view == tokenCounterExplorer",
+          "group": "7_search@2"
         }
       ]
     },
@@ -345,6 +380,21 @@
       {
         "command": "list.focusLast",
         "key": "end",
+        "when": "view == tokenCounterExplorer"
+      },
+      {
+        "command": "tokenCounter.searchFiles",
+        "key": "ctrl+f",
+        "when": "view == tokenCounterExplorer"
+      },
+      {
+        "command": "tokenCounter.findInFiles",
+        "key": "ctrl+shift+f",
+        "when": "view == tokenCounterExplorer"
+      },
+      {
+        "command": "tokenCounter.goToFile",
+        "key": "ctrl+p",
         "when": "view == tokenCounterExplorer"
       }
     ],

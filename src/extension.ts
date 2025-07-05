@@ -365,6 +365,46 @@ export function activate(context: vscode.ExtensionContext) {
             }
         });
         context.subscriptions.push(openInNewWindowCommand);
+
+        const searchFilesCommand = vscode.commands.registerCommand('tokenCounter.searchFiles', async () => {
+            const searchTerm = await vscode.window.showInputBox({
+                prompt: 'Search files by name',
+                placeHolder: 'Enter search term...'
+            });
+            if (searchTerm !== undefined) {
+                provider.setFilter(searchTerm);
+                vscode.window.showInformationMessage(searchTerm ? `Searching: ${searchTerm}` : 'Search cleared');
+            }
+        });
+        context.subscriptions.push(searchFilesCommand);
+
+        const findInFilesCommand = vscode.commands.registerCommand('tokenCounter.findInFiles', async () => {
+            try {
+                await vscode.commands.executeCommand('workbench.action.findInFiles');
+            } catch (error) {
+                vscode.window.showErrorMessage(`Failed to open find in files: ${error}`);
+            }
+        });
+        context.subscriptions.push(findInFilesCommand);
+
+        const goToFileCommand = vscode.commands.registerCommand('tokenCounter.goToFile', async () => {
+            try {
+                await vscode.commands.executeCommand('workbench.action.quickOpen');
+            } catch (error) {
+                vscode.window.showErrorMessage(`Failed to open go to file: ${error}`);
+            }
+        });
+        context.subscriptions.push(goToFileCommand);
+
+        const showFileHistoryCommand = vscode.commands.registerCommand('tokenCounter.showFileHistory', async (node: any) => {
+            if (!node) return;
+            try {
+                await vscode.commands.executeCommand('git.viewFileHistory', node.uri);
+            } catch (error) {
+                vscode.window.showErrorMessage(`Failed to show file history: ${error}`);
+            }
+        });
+        context.subscriptions.push(showFileHistoryCommand);
         
         const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*');
         fileWatcher.onDidChange(uri => {

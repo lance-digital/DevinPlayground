@@ -586,6 +586,24 @@
           "type": "boolean",
           "default": false,
           "description": "隠しファイルを表示"
+        },
+        "tokenCounter.tokenizerType": {
+          "type": "string",
+          "enum": ["openai", "anthropic", "google", "fallback"],
+          "default": "openai",
+          "description": "使用するトークナイザーの種類"
+        },
+        "tokenCounter.openaiModel": {
+          "type": "string",
+          "enum": ["gpt-3.5-turbo", "gpt-4", "gpt-4o"],
+          "default": "gpt-3.5-turbo",
+          "description": "OpenAIモデルの選択"
+        },
+        "tokenCounter.anthropicModel": {
+          "type": "string",
+          "enum": ["claude-3-haiku", "claude-3-sonnet", "claude-3-opus"],
+          "default": "claude-3-sonnet",
+          "description": "Anthropicモデルの選択"
         }
       }
     }
@@ -601,5 +619,9 @@
     "typescript": "^5.8.3",
     "vsce": "^2.15.0"
   },
-  "dependencies": {}
+  "dependencies": {
+    "tiktoken": "^1.0.21",
+    "@anthropic-ai/tokenizer": "^0.0.4",
+    "@google/generative-ai": "^0.24.1"
+  }
 }

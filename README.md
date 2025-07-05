@@ -9,7 +9,7 @@
 - **フォルダ集計**: フォルダ内の全ファイルの累積トークン数を表示
 - **全ワークスペーススキャン**: ワークスペース内の全ファイルを自動的にスキャンしてトークン数を表示
 - **.gitignore除外**: .gitignoreファイルに記載されたファイルやフォルダを自動的に除外
-- **JavaScript互換**: 純粋なJavaScriptによるトークン推定でLLMアプリケーションとの互換性を実現
+- **高精度トークンカウント**: OpenAI tiktoken、Anthropic tokenizer、Google AI tokenizerの公式ライブラリを統合し、正確なトークン数を算出
 - **パフォーマンス最適化**: キャッシュとファイルサイズ制限により応答性を維持
 - **設定可能**: 除外するファイル形式と最大ファイルサイズをカスタマイズ可能
 
@@ -40,8 +40,18 @@
 
 VSCodeの設定で拡張機能の動作をカスタマイズできます：
 
+### 基本設定
 - `tokenCounter.excludedFileTypes`: トークンカウントから除外するファイル拡張子の配列
 - `tokenCounter.maxFileSize`: 処理する最大ファイルサイズ（バイト単位、デフォルト: 1MB）
+- `tokenCounter.tokenSuffix`: トークン数表示の接尾辞（デフォルト: "トークン"）
+- `tokenCounter.sortMethod`: ファイルのソート方法（name, size, date, tokens）
+- `tokenCounter.sortDirection`: ソート方向（asc, desc）
+- `tokenCounter.showHiddenFiles`: 隠しファイルの表示
+
+### トークナイザー設定
+- `tokenCounter.tokenizerType`: 使用するトークナイザーの種類（openai, anthropic, google, fallback）
+- `tokenCounter.openaiModel`: OpenAIモデルの選択（gpt-3.5-turbo, gpt-4, gpt-4o）
+- `tokenCounter.anthropicModel`: Anthropicモデルの選択（claude-3-haiku, claude-3-sonnet, claude-3-opus）
 
 ## 使用方法
 
@@ -125,7 +135,14 @@ VSCodeの設定で拡張機能の動作をカスタマイズできます：
 - **FileDecorationProvider API**: Gitステータスバッジを表示
 - **workspace.fs API**: ファイル・フォルダの作成、削除、リネーム操作
 
-トークン数は純粋なJavaScriptによる推定計算を使用し、LLMアプリケーションとの互換性を実現します。Git状態は`git status --porcelain`コマンドを使用してリアルタイムで取得し、適切なバッジとして表示します。
+トークン数は以下の公式ライブラリを使用して正確に算出されます：
+
+- **OpenAI**: tiktoken ライブラリでGPT-3.5-turbo、GPT-4、GPT-4oに対応
+- **Anthropic**: @anthropic-ai/tokenizer ライブラリでClaude-3シリーズに対応  
+- **Google AI**: @google/generative-ai ライブラリでGeminiシリーズに対応
+- **フォールバック**: 公式ライブラリが利用できない場合の改良された推定計算
+
+Git状態は`git status --porcelain`コマンドを使用してリアルタイムで取得し、適切なバッジとして表示します。
 
 ## 開発
 

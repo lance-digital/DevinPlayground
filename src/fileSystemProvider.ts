@@ -286,7 +286,7 @@ export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<E
             }
             
             const content = await fs.promises.readFile(filePath, 'utf8');
-            const tokenCount = this.estimateTokens(content);
+            const tokenCount = await this.estimateTokens(content);
             
             this.cache[filePath] = { tokenCount, lastModified };
             
@@ -383,28 +383,80 @@ export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<E
         }
     }
 
-    private estimateTokens(text: string): number {
+    private async estimateTokens(text: string): Promise<number> {
         if (!text || text.trim().length === 0) {
             return 0;
         }
         
+        const config = vscode.workspace.getConfiguration('tokenCounter');
+        const tokenizerType = config.get<string>('tokenizerType', 'openai');
+        
+        try {
+            switch (tokenizerType) {
+                case 'openai':
+                    return await this.estimateTokensOpenAI(text, config);
+                case 'anthropic':
+                    return await this.estimateTokensAnthropic(text, config);
+                case 'google':
+                    return await this.estimateTokensGoogle(text, config);
+                default:
+                    return this.estimateTokensFallback(text);
+            }
+        } catch (error) {
+            console.warn(`Tokenizer ${tokenizerType} failed, falling back:`, error);
+            return this.estimateTokensFallback(text);
+        }
+    }
+
+    private async estimateTokensOpenAI(text: string, config: vscode.WorkspaceConfiguration): Promise<number> {
         try {
             const { encoding_for_model } = require('tiktoken');
-            const encoding = encoding_for_model('gpt-3.5-turbo');
+            const model = config.get<string>('openaiModel', 'gpt-3.5-turbo');
+            
+            const encoding = encoding_for_model(model);
             const tokens = encoding.encode(text);
             encoding.free();
             return tokens.length;
         } catch (error) {
-            console.warn('tiktoken not available, falling back to word-based estimation:', error);
-            
-            const words = text.split(/\s+/).filter(word => word.length > 0);
-            const characters = text.length;
-            
-            const charBasedEstimate = Math.ceil(characters / 4);
-            const wordBasedEstimate = Math.ceil(words.length * 1.3);
-            
-            return Math.max(charBasedEstimate, wordBasedEstimate);
+            console.warn('OpenAI tiktoken failed:', error);
+            throw error;
         }
+    }
+
+    private async estimateTokensAnthropic(text: string, config: vscode.WorkspaceConfiguration): Promise<number> {
+        try {
+            const { countTokens } = require('@anthropic-ai/tokenizer');
+            
+            return await countTokens(text);
+        } catch (error) {
+            console.warn('Anthropic tokenizer failed:', error);
+            throw error;
+        }
+    }
+
+    private async estimateTokensGoogle(text: string, config: vscode.WorkspaceConfiguration): Promise<number> {
+        try {
+            const { GoogleGenerativeAI } = require('@google/generative-ai');
+            
+            const genAI = new GoogleGenerativeAI('dummy-key');
+            const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+            
+            const result = await model.countTokens(text);
+            return result.totalTokens;
+        } catch (error) {
+            console.warn('Google AI tokenizer failed:', error);
+            throw error;
+        }
+    }
+
+    private estimateTokensFallback(text: string): number {
+        const words = text.split(/\s+/).filter(word => word.length > 0);
+        const characters = text.length;
+        
+        const charBasedEstimate = Math.ceil(characters / 4);
+        const wordBasedEstimate = Math.ceil(words.length * 1.3);
+        
+        return Math.max(charBasedEstimate, wordBasedEstimate);
     }
 
     private formatTokenCount(count: number): string {

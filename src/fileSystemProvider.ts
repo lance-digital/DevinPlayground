@@ -675,6 +675,7 @@ export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<E
     selectRange(fromUri: string, toUri: string) {
         this.selectedItems.add(fromUri);
         this.selectedItems.add(toUri);
+        
     }
 
     toggleSelection(uri: string) {

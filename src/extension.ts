@@ -648,21 +648,191 @@ export function activate(context: vscode.ExtensionContext) {
                 const stat = await vscode.workspace.fs.stat(node.uri);
                 const relativePath = vscode.workspace.asRelativePath(node.uri);
                 const tokenCount = await provider.getTokenCountPublic(node.uri, stat.type);
+                const fileName = path.basename(node.uri.fsPath);
+                const fileExtension = path.extname(node.uri.fsPath);
+                const isDirectory = stat.type === vscode.FileType.Directory;
                 
-                let message = `File: ${path.basename(node.uri.fsPath)}\n`;
-                message += `Path: ${relativePath}\n`;
-                message += `Full Path: ${node.uri.fsPath}\n`;
-                message += `Size: ${provider.formatFileSizePublic(stat.size)}\n`;
-                message += `Modified: ${new Date(stat.mtime).toLocaleString()}\n`;
-                message += `Created: ${new Date(stat.ctime).toLocaleString()}\n`;
-                if (tokenCount > 0) {
-                    message += `Token Count: ${tokenCount.toLocaleString()}\n`;
-                }
-                message += `Type: ${stat.type === vscode.FileType.Directory ? 'Folder' : 'File'}\n`;
+                const panel = vscode.window.createWebviewPanel(
+                    'fileProperties',
+                    `プロパティ: ${fileName}`,
+                    vscode.ViewColumn.One,
+                    {
+                        enableScripts: true,
+                        retainContextWhenHidden: true
+                    }
+                );
                 
-                vscode.window.showInformationMessage(message, { modal: true });
+                panel.webview.html = `
+                    <!DOCTYPE html>
+                    <html lang="ja">
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>ファイルプロパティ</title>
+                        <style>
+                            body {
+                                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                                padding: 20px;
+                                background-color: var(--vscode-editor-background);
+                                color: var(--vscode-editor-foreground);
+                                line-height: 1.6;
+                            }
+                            .header {
+                                display: flex;
+                                align-items: center;
+                                margin-bottom: 20px;
+                                padding-bottom: 15px;
+                                border-bottom: 1px solid var(--vscode-panel-border);
+                            }
+                            .icon {
+                                font-size: 32px;
+                                margin-right: 15px;
+                            }
+                            .title {
+                                font-size: 18px;
+                                font-weight: bold;
+                            }
+                            .section {
+                                margin-bottom: 25px;
+                            }
+                            .section-title {
+                                font-size: 14px;
+                                font-weight: bold;
+                                margin-bottom: 10px;
+                                color: var(--vscode-textLink-foreground);
+                                border-bottom: 1px solid var(--vscode-panel-border);
+                                padding-bottom: 5px;
+                            }
+                            .property {
+                                display: flex;
+                                justify-content: space-between;
+                                margin-bottom: 8px;
+                                padding: 5px 0;
+                            }
+                            .property-label {
+                                font-weight: 500;
+                                min-width: 120px;
+                            }
+                            .property-value {
+                                flex: 1;
+                                text-align: right;
+                                font-family: 'Courier New', monospace;
+                                background-color: var(--vscode-input-background);
+                                padding: 2px 8px;
+                                border-radius: 3px;
+                                border: 1px solid var(--vscode-input-border);
+                            }
+                            .copy-button {
+                                background-color: var(--vscode-button-background);
+                                color: var(--vscode-button-foreground);
+                                border: none;
+                                padding: 4px 8px;
+                                border-radius: 3px;
+                                cursor: pointer;
+                                font-size: 12px;
+                                margin-left: 8px;
+                            }
+                            .copy-button:hover {
+                                background-color: var(--vscode-button-hoverBackground);
+                            }
+                            .token-highlight {
+                                background-color: var(--vscode-textCodeBlock-background);
+                                color: var(--vscode-textLink-foreground);
+                                font-weight: bold;
+                                padding: 2px 6px;
+                                border-radius: 3px;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="header">
+                            <div class="icon">${isDirectory ? '📁' : '📄'}</div>
+                            <div class="title">${fileName}</div>
+                        </div>
+                        
+                        <div class="section">
+                            <div class="section-title">基本情報</div>
+                            <div class="property">
+                                <span class="property-label">名前:</span>
+                                <span class="property-value">${fileName}</span>
+                            </div>
+                            <div class="property">
+                                <span class="property-label">種類:</span>
+                                <span class="property-value">${isDirectory ? 'フォルダ' : 'ファイル'}</span>
+                            </div>
+                            ${!isDirectory ? `
+                            <div class="property">
+                                <span class="property-label">拡張子:</span>
+                                <span class="property-value">${fileExtension || 'なし'}</span>
+                            </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="section">
+                            <div class="section-title">場所</div>
+                            <div class="property">
+                                <span class="property-label">相対パス:</span>
+                                <span class="property-value">${relativePath}</span>
+                                <button class="copy-button" onclick="copyToClipboard('${relativePath}')">コピー</button>
+                            </div>
+                            <div class="property">
+                                <span class="property-label">フルパス:</span>
+                                <span class="property-value">${node.uri.fsPath}</span>
+                                <button class="copy-button" onclick="copyToClipboard('${node.uri.fsPath}')">コピー</button>
+                            </div>
+                        </div>
+                        
+                        <div class="section">
+                            <div class="section-title">サイズ・日時</div>
+                            <div class="property">
+                                <span class="property-label">サイズ:</span>
+                                <span class="property-value">${provider.formatFileSizePublic(stat.size)}</span>
+                            </div>
+                            <div class="property">
+                                <span class="property-label">更新日時:</span>
+                                <span class="property-value">${new Date(stat.mtime).toLocaleString('ja-JP')}</span>
+                            </div>
+                            <div class="property">
+                                <span class="property-label">作成日時:</span>
+                                <span class="property-value">${new Date(stat.ctime).toLocaleString('ja-JP')}</span>
+                            </div>
+                        </div>
+                        
+                        ${tokenCount > 0 ? `
+                        <div class="section">
+                            <div class="section-title">トークン情報</div>
+                            <div class="property">
+                                <span class="property-label">トークン数:</span>
+                                <span class="property-value token-highlight">${tokenCount.toLocaleString()} トークン</span>
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <script>
+                            function copyToClipboard(text) {
+                                navigator.clipboard.writeText(text).then(() => {
+                                    const buttons = document.querySelectorAll('.copy-button');
+                                    buttons.forEach(btn => {
+                                        if (btn.onclick.toString().includes(text)) {
+                                            const originalText = btn.textContent;
+                                            btn.textContent = 'コピー済み!';
+                                            btn.style.backgroundColor = 'var(--vscode-textLink-foreground)';
+                                            setTimeout(() => {
+                                                btn.textContent = originalText;
+                                                btn.style.backgroundColor = 'var(--vscode-button-background)';
+                                            }, 1500);
+                                        }
+                                    });
+                                }).catch(err => {
+                                    console.error('Failed to copy text: ', err);
+                                });
+                            }
+                        </script>
+                    </body>
+                    </html>
+                `;
             } catch (error) {
-                vscode.window.showErrorMessage(`Failed to get file properties: ${error}`);
+                vscode.window.showErrorMessage(`ファイルプロパティの取得に失敗しました: ${error}`);
             }
         });
         context.subscriptions.push(showFilePropertiesCommand);

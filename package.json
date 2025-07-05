@@ -335,6 +335,26 @@
           "command": "tokenCounter.openInNewWindow",
           "when": "view == tokenCounterExplorer && viewItem == folder",
           "group": "4_reveal@3"
+        },
+        {
+          "command": "tokenCounter.gitStageChanges",
+          "when": "view == tokenCounterExplorer && viewItem && gitOpenRepositoryCount != 0",
+          "group": "git@1"
+        },
+        {
+          "command": "tokenCounter.gitUnstageChanges",
+          "when": "view == tokenCounterExplorer && viewItem && gitOpenRepositoryCount != 0",
+          "group": "git@2"
+        },
+        {
+          "command": "tokenCounter.gitDiscardChanges",
+          "when": "view == tokenCounterExplorer && viewItem && gitOpenRepositoryCount != 0",
+          "group": "git@3"
+        },
+        {
+          "command": "tokenCounter.gitViewChanges",
+          "when": "view == tokenCounterExplorer && viewItem && gitOpenRepositoryCount != 0",
+          "group": "git@4"
         }
       ],
       "view/title": [

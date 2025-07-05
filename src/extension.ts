@@ -295,6 +295,76 @@ export function activate(context: vscode.ExtensionContext) {
             vscode.window.showInformationMessage('Filter cleared');
         });
         context.subscriptions.push(clearFilterCommand);
+
+        const openWithCommand = vscode.commands.registerCommand('tokenCounter.openWith', async (node: any) => {
+            if (!node) return;
+            try {
+                await vscode.commands.executeCommand('vscode.openWith', node.uri);
+            } catch (error) {
+                vscode.window.showErrorMessage(`Failed to open with: ${error}`);
+            }
+        });
+        context.subscriptions.push(openWithCommand);
+
+        const compareSelectedCommand = vscode.commands.registerCommand('tokenCounter.compareSelected', async (node: any) => {
+            if (!node) return;
+            try {
+                const selection = await vscode.window.showOpenDialog({
+                    canSelectFiles: true,
+                    canSelectFolders: false,
+                    canSelectMany: false,
+                    openLabel: 'Select file to compare with'
+                });
+                if (selection && selection[0]) {
+                    await vscode.commands.executeCommand('vscode.diff', node.uri, selection[0]);
+                }
+            } catch (error) {
+                vscode.window.showErrorMessage(`Failed to compare: ${error}`);
+            }
+        });
+        context.subscriptions.push(compareSelectedCommand);
+
+        const showPropertiesCommand = vscode.commands.registerCommand('tokenCounter.showProperties', async (node: any) => {
+            if (!node) return;
+            try {
+                const stat = await vscode.workspace.fs.stat(node.uri);
+                const size = stat.size;
+                const created = new Date(stat.ctime).toLocaleString();
+                const modified = new Date(stat.mtime).toLocaleString();
+                const type = stat.type === vscode.FileType.Directory ? 'Folder' : 'File';
+                
+                const message = `Properties for ${path.basename(node.uri.fsPath)}:\n\n` +
+                    `Type: ${type}\n` +
+                    `Size: ${size} bytes\n` +
+                    `Created: ${created}\n` +
+                    `Modified: ${modified}\n` +
+                    `Path: ${node.uri.fsPath}`;
+                
+                vscode.window.showInformationMessage(message, { modal: true });
+            } catch (error) {
+                vscode.window.showErrorMessage(`Failed to show properties: ${error}`);
+            }
+        });
+        context.subscriptions.push(showPropertiesCommand);
+
+        const toggleHiddenFilesCommand = vscode.commands.registerCommand('tokenCounter.toggleHiddenFiles', async () => {
+            const config = vscode.workspace.getConfiguration('tokenCounter');
+            const current = config.get<boolean>('showHiddenFiles', false);
+            await config.update('showHiddenFiles', !current, vscode.ConfigurationTarget.Workspace);
+            provider.refresh();
+            vscode.window.showInformationMessage(`Hidden files ${!current ? 'shown' : 'hidden'}`);
+        });
+        context.subscriptions.push(toggleHiddenFilesCommand);
+
+        const openInNewWindowCommand = vscode.commands.registerCommand('tokenCounter.openInNewWindow', async (node: any) => {
+            if (!node) return;
+            try {
+                await vscode.commands.executeCommand('vscode.openFolder', node.uri, true);
+            } catch (error) {
+                vscode.window.showErrorMessage(`Failed to open in new window: ${error}`);
+            }
+        });
+        context.subscriptions.push(openInNewWindowCommand);
         
         const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*');
         fileWatcher.onDidChange(uri => {

@@ -23,6 +23,8 @@ export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<E
     private sortDirection: 'asc' | 'desc' = 'asc';
     private filter: string = '';
     private expandedFolders: Set<string> = new Set();
+    private selectedItems: Set<string> = new Set();
+    private lastSelectedItem: string | null = null;
 
     readonly onDidChangeFile = this._onDidChangeFile.event;
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
@@ -543,5 +545,37 @@ export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<E
         }
         
         return `${size.toFixed(1)} ${units[unitIndex]}`;
+    }
+
+    selectItem(uri: string) {
+        this.selectedItems.add(uri);
+        this.lastSelectedItem = uri;
+    }
+
+    selectRange(fromUri: string, toUri: string) {
+        this.selectedItems.add(fromUri);
+        this.selectedItems.add(toUri);
+    }
+
+    toggleSelection(uri: string) {
+        if (this.selectedItems.has(uri)) {
+            this.selectedItems.delete(uri);
+        } else {
+            this.selectedItems.add(uri);
+        }
+        this.lastSelectedItem = uri;
+    }
+
+    clearSelection() {
+        this.selectedItems.clear();
+        this.lastSelectedItem = null;
+    }
+
+    getSelectedItems(): string[] {
+        return Array.from(this.selectedItems);
+    }
+
+    isSelected(uri: string): boolean {
+        return this.selectedItems.has(uri);
     }
 }

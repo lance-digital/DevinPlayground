@@ -128,6 +128,31 @@
         "command": "tokenCounter.clearFilter",
         "title": "Clear Filter",
         "icon": "$(clear-all)"
+      },
+      {
+        "command": "tokenCounter.openWith",
+        "title": "Open With...",
+        "icon": "$(file-code)"
+      },
+      {
+        "command": "tokenCounter.compareSelected",
+        "title": "Compare Selected",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "tokenCounter.showProperties",
+        "title": "Properties",
+        "icon": "$(info)"
+      },
+      {
+        "command": "tokenCounter.toggleHiddenFiles",
+        "title": "Toggle Hidden Files",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "tokenCounter.openInNewWindow",
+        "title": "Open in New Window",
+        "icon": "$(window)"
       }
     ],
     "menus": {
@@ -181,6 +206,26 @@
           "command": "tokenCounter.openInTerminal",
           "when": "view == tokenCounterExplorer && viewItem == folder",
           "group": "4_reveal@2"
+        },
+        {
+          "command": "tokenCounter.openWith",
+          "when": "view == tokenCounterExplorer && viewItem == file",
+          "group": "5_open@1"
+        },
+        {
+          "command": "tokenCounter.compareSelected",
+          "when": "view == tokenCounterExplorer && viewItem",
+          "group": "5_open@2"
+        },
+        {
+          "command": "tokenCounter.showProperties",
+          "when": "view == tokenCounterExplorer && viewItem",
+          "group": "6_properties@1"
+        },
+        {
+          "command": "tokenCounter.openInNewWindow",
+          "when": "view == tokenCounterExplorer && viewItem == folder",
+          "group": "4_reveal@3"
         }
       ],
       "view/title": [
@@ -228,6 +273,11 @@
           "command": "tokenCounter.toggleSortDirection",
           "when": "view == tokenCounterExplorer",
           "group": "5_sort@5"
+        },
+        {
+          "command": "tokenCounter.toggleHiddenFiles",
+          "when": "view == tokenCounterExplorer",
+          "group": "navigation@5"
         }
       ]
     },
@@ -260,6 +310,41 @@
       {
         "command": "tokenCounter.refresh",
         "key": "F5",
+        "when": "view == tokenCounterExplorer"
+      },
+      {
+        "command": "tokenCounter.selectAll",
+        "key": "ctrl+a",
+        "when": "view == tokenCounterExplorer"
+      },
+      {
+        "command": "workbench.files.action.focusFilesExplorer",
+        "key": "enter",
+        "when": "view == tokenCounterExplorer && viewItem"
+      },
+      {
+        "command": "list.toggleExpand",
+        "key": "space",
+        "when": "view == tokenCounterExplorer && viewItem == folder"
+      },
+      {
+        "command": "list.focusUp",
+        "key": "up",
+        "when": "view == tokenCounterExplorer"
+      },
+      {
+        "command": "list.focusDown",
+        "key": "down",
+        "when": "view == tokenCounterExplorer"
+      },
+      {
+        "command": "list.focusFirst",
+        "key": "home",
+        "when": "view == tokenCounterExplorer"
+      },
+      {
+        "command": "list.focusLast",
+        "key": "end",
         "when": "view == tokenCounterExplorer"
       }
     ],

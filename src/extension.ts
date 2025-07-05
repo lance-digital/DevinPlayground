@@ -694,21 +694,80 @@ export function activate(context: vscode.ExtensionContext) {
         });
         context.subscriptions.push(openInIntegratedTerminalCommand);
         
+        let refreshTimeout: NodeJS.Timeout | undefined;
+        const debouncedRefresh = (uri: vscode.Uri, changeType: string) => {
+            console.log(`👁️ [WATCHER] ${changeType}: ${uri.fsPath}`);
+            
+            if (refreshTimeout) {
+                clearTimeout(refreshTimeout);
+            }
+            
+            refreshTimeout = setTimeout(async () => {
+                try {
+                    if (changeType === 'File changed' && provider.refreshSpecificFile) {
+                        await provider.refreshSpecificFile(uri);
+                    } else {
+                        provider.refresh();
+                    }
+                    console.log(`🔄 [WATCHER] Real-time refresh completed for ${changeType}`);
+                } catch (error) {
+                    console.error(`❌ [WATCHER] Refresh failed:`, error);
+                    provider.refresh();
+                }
+            }, 300); // 300ms debounce delay
+        };
+
         const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*');
-        fileWatcher.onDidChange(uri => {
-            console.log(`👁️ [WATCHER] File changed: ${uri.fsPath}`);
-            provider.refresh();
-        });
-        fileWatcher.onDidCreate(uri => {
-            console.log(`👁️ [WATCHER] File created: ${uri.fsPath}`);
-            provider.refresh();
-        });
-        fileWatcher.onDidDelete(uri => {
-            console.log(`👁️ [WATCHER] File deleted: ${uri.fsPath}`);
-            provider.refresh();
-        });
+        fileWatcher.onDidChange(uri => debouncedRefresh(uri, 'File changed'));
+        fileWatcher.onDidCreate(uri => debouncedRefresh(uri, 'File created'));
+        fileWatcher.onDidDelete(uri => debouncedRefresh(uri, 'File deleted'));
         context.subscriptions.push(fileWatcher);
-        console.log('✅ [ACTIVATION] File watcher created');
+        
+        const textDocumentWatcher = vscode.workspace.onDidChangeTextDocument(event => {
+            if (event.document.uri.scheme === 'file') {
+                console.log(`📝 [TEXT-WATCHER] Document changed: ${event.document.uri.fsPath}`);
+                debouncedRefresh(event.document.uri, 'Text document changed');
+            }
+        });
+        context.subscriptions.push(textDocumentWatcher);
+        
+        const saveWatcher = vscode.workspace.onDidSaveTextDocument(document => {
+            if (document.uri.scheme === 'file') {
+                console.log(`💾 [SAVE-WATCHER] Document saved: ${document.uri.fsPath}`);
+                setTimeout(async () => {
+                    try {
+                        if (provider.refreshSpecificFile) {
+                            await provider.refreshSpecificFile(document.uri);
+                        } else {
+                            provider.refresh();
+                        }
+                        console.log(`✅ [SAVE-WATCHER] Token count updated immediately after save`);
+                    } catch (error) {
+                        console.error(`❌ [SAVE-WATCHER] Refresh failed:`, error);
+                        provider.refresh();
+                    }
+                }, 100); // Minimal delay to ensure file is fully saved
+            }
+        });
+        context.subscriptions.push(saveWatcher);
+        
+        const configWatcher = vscode.workspace.onDidChangeConfiguration(event => {
+            if (event.affectsConfiguration('tokenCounter.tokenizerType') ||
+                event.affectsConfiguration('tokenCounter.openaiModel') ||
+                event.affectsConfiguration('tokenCounter.anthropicModel')) {
+                console.log('⚙️ [CONFIG-WATCHER] Tokenizer configuration changed');
+                
+                provider.clearTokenCache();
+                
+                provider.refresh();
+                
+                vscode.window.showInformationMessage('トークナイザー設定が変更されました。トークン数を再計算中...');
+                console.log('✅ [CONFIG-WATCHER] Token counts refreshed after configuration change');
+            }
+        });
+        context.subscriptions.push(configWatcher);
+        
+        console.log('✅ [ACTIVATION] Enhanced real-time file watchers and configuration watcher created');
         
         console.log('🎉 [ACTIVATION] Token Counter extension activation completed successfully!');
         

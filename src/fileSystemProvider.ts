@@ -27,6 +27,7 @@ export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<E
     private expandedFolders: Set<string> = new Set();
     private selectedItems: Set<string> = new Set();
     private lastSelectedItem: string | null = null;
+    private tokenCache = new Map<string, number>();
 
     readonly onDidChangeFile = this._onDidChangeFile.event;
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
@@ -266,13 +267,22 @@ export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<E
 
     private async calculateFileTokens(uri: vscode.Uri): Promise<number> {
         const filePath = uri.fsPath;
+        const relativePath = vscode.workspace.asRelativePath(uri);
         
         try {
             const stat = await fs.promises.stat(filePath);
             const lastModified = stat.mtime.getTime();
             
             if (this.cache[filePath] && this.cache[filePath].lastModified === lastModified) {
-                return this.cache[filePath].tokenCount;
+                const cachedTokens = this.cache[filePath].tokenCount;
+                this.tokenCache.set(relativePath, cachedTokens);
+                return cachedTokens;
+            }
+            
+            if (this.tokenCache.has(relativePath)) {
+                const cachedTokens = this.tokenCache.get(relativePath)!;
+                console.log(`💾 [CACHE] Using cached tokens for ${path.basename(filePath)}: ${cachedTokens}`);
+                return cachedTokens;
             }
             
             if (!this.shouldProcessFile(filePath)) {
@@ -289,8 +299,9 @@ export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<E
             const tokenCount = await this.estimateTokens(content);
             
             this.cache[filePath] = { tokenCount, lastModified };
+            this.tokenCache.set(relativePath, tokenCount);
             
-            console.log(`📊 [FILESYSTEM] File tokens: ${path.basename(filePath)} = ${tokenCount}`);
+            console.log(`📊 [FILESYSTEM] File tokens: ${path.basename(filePath)} = ${tokenCount} (cached)`);
             return tokenCount;
             
         } catch (error) {
@@ -473,6 +484,34 @@ export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<E
         console.log('🔄 [FILESYSTEM] Refreshing tree data');
         this.cache = {};
         this._onDidChangeTreeData.fire(undefined);
+    }
+
+    clearTokenCache(): void {
+        console.log('🗑️ [CACHE] Clearing all token cache');
+        this.tokenCache.clear();
+    }
+
+    async refreshSpecificFile(uri: vscode.Uri): Promise<void> {
+        try {
+            console.log(`🎯 [FILESYSTEM] Refreshing specific file: ${uri.fsPath}`);
+            
+            const relativePath = vscode.workspace.asRelativePath(uri);
+            if (this.tokenCache && this.tokenCache.has(relativePath)) {
+                this.tokenCache.delete(relativePath);
+                console.log(`🗑️ [CACHE] Cleared token cache for: ${relativePath}`);
+            }
+            
+            this._onDidChangeTreeData.fire(undefined);
+            
+            setTimeout(() => {
+                this._onDidChangeTreeData.fire(undefined);
+                console.log(`📊 [FILESYSTEM] Parent folder totals refreshed`);
+            }, 100);
+            
+        } catch (error) {
+            console.error(`❌ [FILESYSTEM] Specific file refresh failed:`, error);
+            this.refresh();
+        }
     }
 
     async handleDrag(source: Entry[], treeDataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {

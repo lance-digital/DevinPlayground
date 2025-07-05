@@ -53,6 +53,81 @@
         "command": "tokenCounter.copy",
         "title": "Copy Path",
         "icon": "$(copy)"
+      },
+      {
+        "command": "tokenCounter.cut",
+        "title": "Cut",
+        "icon": "$(clippy)"
+      },
+      {
+        "command": "tokenCounter.paste",
+        "title": "Paste",
+        "icon": "$(clippy)"
+      },
+      {
+        "command": "tokenCounter.duplicate",
+        "title": "Duplicate",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "tokenCounter.revealInExplorer",
+        "title": "Reveal in File Explorer",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "tokenCounter.openInTerminal",
+        "title": "Open in Terminal",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "tokenCounter.selectAll",
+        "title": "Select All",
+        "icon": "$(selection)"
+      },
+      {
+        "command": "tokenCounter.collapseAll",
+        "title": "Collapse All",
+        "icon": "$(collapse-all)"
+      },
+      {
+        "command": "tokenCounter.expandAll",
+        "title": "Expand All",
+        "icon": "$(expand-all)"
+      },
+      {
+        "command": "tokenCounter.sortByName",
+        "title": "Sort by Name",
+        "icon": "$(sort-precedence)"
+      },
+      {
+        "command": "tokenCounter.sortBySize",
+        "title": "Sort by Size",
+        "icon": "$(sort-precedence)"
+      },
+      {
+        "command": "tokenCounter.sortByDate",
+        "title": "Sort by Date",
+        "icon": "$(sort-precedence)"
+      },
+      {
+        "command": "tokenCounter.sortByTokens",
+        "title": "Sort by Token Count",
+        "icon": "$(sort-precedence)"
+      },
+      {
+        "command": "tokenCounter.toggleSortDirection",
+        "title": "Toggle Sort Direction",
+        "icon": "$(arrow-swap)"
+      },
+      {
+        "command": "tokenCounter.filterFiles",
+        "title": "Filter Files",
+        "icon": "$(filter)"
+      },
+      {
+        "command": "tokenCounter.clearFilter",
+        "title": "Clear Filter",
+        "icon": "$(clear-all)"
       }
     ],
     "menus": {
@@ -81,16 +156,113 @@
           "command": "tokenCounter.copy",
           "when": "view == tokenCounterExplorer",
           "group": "3_copy@1"
+        },
+        {
+          "command": "tokenCounter.cut",
+          "when": "view == tokenCounterExplorer",
+          "group": "3_copy@2"
+        },
+        {
+          "command": "tokenCounter.paste",
+          "when": "view == tokenCounterExplorer && viewItem == folder",
+          "group": "3_copy@3"
+        },
+        {
+          "command": "tokenCounter.duplicate",
+          "when": "view == tokenCounterExplorer",
+          "group": "3_copy@4"
+        },
+        {
+          "command": "tokenCounter.revealInExplorer",
+          "when": "view == tokenCounterExplorer",
+          "group": "4_reveal@1"
+        },
+        {
+          "command": "tokenCounter.openInTerminal",
+          "when": "view == tokenCounterExplorer && viewItem == folder",
+          "group": "4_reveal@2"
         }
       ],
       "view/title": [
         {
           "command": "tokenCounter.refresh",
           "when": "view == tokenCounterExplorer",
-          "group": "navigation"
+          "group": "navigation@1"
+        },
+        {
+          "command": "tokenCounter.collapseAll",
+          "when": "view == tokenCounterExplorer",
+          "group": "navigation@2"
+        },
+        {
+          "command": "tokenCounter.expandAll",
+          "when": "view == tokenCounterExplorer",
+          "group": "navigation@3"
+        },
+        {
+          "command": "tokenCounter.filterFiles",
+          "when": "view == tokenCounterExplorer",
+          "group": "navigation@4"
+        },
+        {
+          "command": "tokenCounter.sortByName",
+          "when": "view == tokenCounterExplorer",
+          "group": "5_sort@1"
+        },
+        {
+          "command": "tokenCounter.sortBySize",
+          "when": "view == tokenCounterExplorer",
+          "group": "5_sort@2"
+        },
+        {
+          "command": "tokenCounter.sortByDate",
+          "when": "view == tokenCounterExplorer",
+          "group": "5_sort@3"
+        },
+        {
+          "command": "tokenCounter.sortByTokens",
+          "when": "view == tokenCounterExplorer",
+          "group": "5_sort@4"
+        },
+        {
+          "command": "tokenCounter.toggleSortDirection",
+          "when": "view == tokenCounterExplorer",
+          "group": "5_sort@5"
         }
       ]
     },
+    "keybindings": [
+      {
+        "command": "tokenCounter.rename",
+        "key": "F2",
+        "when": "view == tokenCounterExplorer && viewItem"
+      },
+      {
+        "command": "tokenCounter.delete",
+        "key": "Delete",
+        "when": "view == tokenCounterExplorer && viewItem"
+      },
+      {
+        "command": "tokenCounter.copy",
+        "key": "ctrl+c",
+        "when": "view == tokenCounterExplorer && viewItem"
+      },
+      {
+        "command": "tokenCounter.cut",
+        "key": "ctrl+x",
+        "when": "view == tokenCounterExplorer && viewItem"
+      },
+      {
+        "command": "tokenCounter.paste",
+        "key": "ctrl+v",
+        "when": "view == tokenCounterExplorer && viewItem == folder"
+      },
+      {
+        "command": "tokenCounter.refresh",
+        "key": "F5",
+        "when": "view == tokenCounterExplorer"
+      }
+    ],
     "configuration": {
       "title": "Token Counter",
       "properties": {
@@ -145,6 +317,23 @@
           "type": "string",
           "default": "トークン",
           "description": "Suffix to display after token count (e.g., 'トークン' for '[120トークン]')"
+        },
+        "tokenCounter.sortBy": {
+          "type": "string",
+          "enum": ["name", "size", "date", "tokens"],
+          "default": "name",
+          "description": "ファイルのソート方法"
+        },
+        "tokenCounter.sortDirection": {
+          "type": "string",
+          "enum": ["asc", "desc"],
+          "default": "asc",
+          "description": "ソート方向"
+        },
+        "tokenCounter.showHiddenFiles": {
+          "type": "boolean",
+          "default": false,
+          "description": "隠しファイルを表示"
         }
       }
     }

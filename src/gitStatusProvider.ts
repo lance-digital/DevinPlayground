@@ -21,6 +21,11 @@ export class GitStatusProvider implements vscode.FileDecorationProvider {
         fileWatcher.onDidChange(() => this.scheduleRefresh());
         fileWatcher.onDidCreate(() => this.scheduleRefresh());
         fileWatcher.onDidDelete(() => this.scheduleRefresh());
+        
+        const gitWatcher = vscode.workspace.createFileSystemWatcher('**/.git/**');
+        gitWatcher.onDidChange(() => this.scheduleRefresh());
+        gitWatcher.onDidCreate(() => this.scheduleRefresh());
+        gitWatcher.onDidDelete(() => this.scheduleRefresh());
     }
 
     private scheduleRefresh() {
@@ -65,14 +70,18 @@ export class GitStatusProvider implements vscode.FileDecorationProvider {
                     const filePath = line.substring(3);
                     
                     let simpleStatus: GitStatus[string];
-                    if (statusCode.includes('M')) simpleStatus = 'M';
-                    else if (statusCode.includes('A')) simpleStatus = 'A';
-                    else if (statusCode.includes('D')) simpleStatus = 'D';
-                    else if (statusCode.includes('R')) simpleStatus = 'R';
-                    else if (statusCode.includes('C')) simpleStatus = 'C';
-                    else if (statusCode.includes('U')) simpleStatus = 'U';
-                    else if (statusCode.includes('?')) simpleStatus = '?';
-                    else simpleStatus = '!';
+                    const indexStatus = statusCode[0];
+                    const workingStatus = statusCode[1];
+                    
+                    if (indexStatus === 'A' || workingStatus === 'A') simpleStatus = 'A';
+                    else if (indexStatus === 'M' || workingStatus === 'M') simpleStatus = 'M';
+                    else if (indexStatus === 'D' || workingStatus === 'D') simpleStatus = 'D';
+                    else if (indexStatus === 'R' || workingStatus === 'R') simpleStatus = 'R';
+                    else if (indexStatus === 'C' || workingStatus === 'C') simpleStatus = 'C';
+                    else if (indexStatus === 'U' || workingStatus === 'U') simpleStatus = 'U';
+                    else if (statusCode === '??') simpleStatus = '?';
+                    else if (statusCode === '!!') simpleStatus = '!';
+                    else simpleStatus = 'M';
                     
                     status[filePath] = simpleStatus;
                 }

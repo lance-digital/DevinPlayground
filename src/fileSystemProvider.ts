@@ -7,6 +7,8 @@ interface Entry {
     uri: vscode.Uri;
     type: vscode.FileType;
     tokenCount?: number;
+    size?: number;
+    mtime?: number;
 }
 
 export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<Entry>, vscode.FileSystemProvider, vscode.TreeDragAndDropController<Entry> {
@@ -17,6 +19,10 @@ export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<E
     readonly dropMimeTypes = ['application/vnd.code.tree.tokenCounterExplorer'];
     private cache: { [filePath: string]: { tokenCount: number; lastModified: number } } = {};
     private gitignorePatterns: string[] = [];
+    private sortMode: 'name' | 'size' | 'date' | 'tokens' = 'name';
+    private sortDirection: 'asc' | 'desc' = 'asc';
+    private filter: string = '';
+    private expandedFolders: Set<string> = new Set();
 
     readonly onDidChangeFile = this._onDidChangeFile.event;
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
@@ -167,15 +173,17 @@ export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<E
                 }
                 
                 const tokenCount = await this.getTokenCount(childUri, type);
-                entries.push({ uri: childUri, type, tokenCount });
+                const stat = await this.stat(childUri);
+                entries.push({ 
+                    uri: childUri, 
+                    type, 
+                    tokenCount,
+                    size: stat.size,
+                    mtime: stat.mtime
+                });
             }
             
-            return entries.sort((a, b) => {
-                if (a.type !== b.type) {
-                    return a.type === vscode.FileType.Directory ? -1 : 1;
-                }
-                return path.basename(a.uri.fsPath).localeCompare(path.basename(b.uri.fsPath));
-            });
+            return this.sortAndFilterEntries(entries);
         }
 
         return [];
@@ -197,7 +205,23 @@ export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<E
         );
         
         treeItem.resourceUri = element.uri;
-        treeItem.tooltip = element.tokenCount ? `${element.tokenCount.toLocaleString()} ${tokenSuffix}` : undefined;
+        
+        let tooltip = '';
+        if (element.tokenCount) {
+            tooltip += `${element.tokenCount.toLocaleString()} ${tokenSuffix}`;
+        }
+        if (element.size !== undefined) {
+            tooltip += tooltip ? '\n' : '';
+            tooltip += `Size: ${this.formatFileSize(element.size)}`;
+        }
+        if (element.mtime) {
+            tooltip += tooltip ? '\n' : '';
+            tooltip += `Modified: ${new Date(element.mtime).toLocaleString()}`;
+        }
+        tooltip += tooltip ? '\n' : '';
+        tooltip += `Path: ${element.uri.fsPath}`;
+        
+        treeItem.tooltip = tooltip;
         treeItem.contextValue = element.type === vscode.FileType.Directory ? 'folder' : 'file';
         
         if (element.type === vscode.FileType.File) {
@@ -409,5 +433,115 @@ export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<E
         }
 
         this.refresh();
+    }
+
+    private sortAndFilterEntries(entries: Entry[]): Entry[] {
+        let filtered = entries;
+        
+        if (this.filter) {
+            const filterPattern = this.filter.toLowerCase().replace(/\*/g, '.*');
+            const regex = new RegExp(filterPattern);
+            filtered = entries.filter(entry => {
+                const name = path.basename(entry.uri.fsPath).toLowerCase();
+                return regex.test(name);
+            });
+        }
+        
+        const config = vscode.workspace.getConfiguration('tokenCounter');
+        const showHidden = config.get<boolean>('showHiddenFiles', false);
+        
+        if (!showHidden) {
+            filtered = filtered.filter(entry => {
+                const name = path.basename(entry.uri.fsPath);
+                return !name.startsWith('.');
+            });
+        }
+        
+        return filtered.sort((a, b) => {
+            let comparison = 0;
+            
+            if (a.type === vscode.FileType.Directory && b.type !== vscode.FileType.Directory) {
+                return -1;
+            }
+            if (a.type !== vscode.FileType.Directory && b.type === vscode.FileType.Directory) {
+                return 1;
+            }
+            
+            switch (this.sortMode) {
+                case 'name':
+                    comparison = path.basename(a.uri.fsPath).localeCompare(path.basename(b.uri.fsPath));
+                    break;
+                case 'size':
+                    comparison = (a.size || 0) - (b.size || 0);
+                    break;
+                case 'date':
+                    comparison = (a.mtime || 0) - (b.mtime || 0);
+                    break;
+                case 'tokens':
+                    comparison = (a.tokenCount || 0) - (b.tokenCount || 0);
+                    break;
+            }
+            
+            return this.sortDirection === 'asc' ? comparison : -comparison;
+        });
+    }
+
+    setSortMode(mode: 'name' | 'size' | 'date' | 'tokens') {
+        this.sortMode = mode;
+        const config = vscode.workspace.getConfiguration('tokenCounter');
+        config.update('sortBy', mode, vscode.ConfigurationTarget.Workspace);
+        this.refresh();
+    }
+
+    toggleSortDirection() {
+        this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+        const config = vscode.workspace.getConfiguration('tokenCounter');
+        config.update('sortDirection', this.sortDirection, vscode.ConfigurationTarget.Workspace);
+        this.refresh();
+    }
+
+    setFilter(filter: string) {
+        this.filter = filter;
+        this.refresh();
+    }
+
+    collapseAll() {
+        this.expandedFolders.clear();
+        this.refresh();
+    }
+
+    expandAll() {
+        const expandRecursively = async (uri: vscode.Uri) => {
+            try {
+                const entries = await this.readDirectory(uri);
+                for (const [name, type] of entries) {
+                    if (type === vscode.FileType.Directory) {
+                        const childUri = vscode.Uri.joinPath(uri, name);
+                        this.expandedFolders.add(childUri.fsPath);
+                        await expandRecursively(childUri);
+                    }
+                }
+            } catch (error) {
+                console.error('Error expanding folder:', error);
+            }
+        };
+
+        if (vscode.workspace.workspaceFolders) {
+            expandRecursively(vscode.workspace.workspaceFolders[0].uri);
+        }
+        this.refresh();
+    }
+
+    private formatFileSize(bytes: number): string {
+        const units = ['B', 'KB', 'MB', 'GB'];
+        let size = bytes;
+        let unitIndex = 0;
+        
+        while (size >= 1024 && unitIndex < units.length - 1) {
+            size /= 1024;
+            unitIndex++;
+        }
+        
+        return `${size.toFixed(1)} ${units[unitIndex]}`;
     }
 }

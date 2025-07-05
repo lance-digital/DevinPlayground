@@ -483,6 +483,36 @@
         "command": "tokenCounter.goToFile",
         "key": "ctrl+p",
         "when": "view == tokenCounterExplorer"
+      },
+      {
+        "command": "tokenCounter.clearSearch",
+        "key": "escape",
+        "when": "view == tokenCounterExplorer && tokenCounter.hasActiveSearch"
+      },
+      {
+        "command": "tokenCounter.newFile",
+        "key": "ctrl+shift+n",
+        "when": "view == tokenCounterExplorer"
+      },
+      {
+        "command": "tokenCounter.newFolder",
+        "key": "ctrl+shift+alt+n",
+        "when": "view == tokenCounterExplorer"
+      },
+      {
+        "command": "tokenCounter.duplicate",
+        "key": "ctrl+d",
+        "when": "view == tokenCounterExplorer && viewItem"
+      },
+      {
+        "command": "tokenCounter.collapseAll",
+        "key": "ctrl+shift+left",
+        "when": "view == tokenCounterExplorer"
+      },
+      {
+        "command": "tokenCounter.expandAll",
+        "key": "ctrl+shift+right",
+        "when": "view == tokenCounterExplorer"
       }
     ],
     "configuration": {

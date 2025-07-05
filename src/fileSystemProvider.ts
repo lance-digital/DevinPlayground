@@ -746,24 +746,97 @@ export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<E
     }
 
     private applySearchFilter(entries: Entry[], searchTerm: string): Entry[] {
-        const lowerSearchTerm = searchTerm.toLowerCase();
+        if (!searchTerm || searchTerm.trim() === '') {
+            return entries;
+        }
+
+        const trimmedTerm = searchTerm.trim();
         
-        return entries.filter(entry => {
+        if (trimmedTerm.startsWith('/') && trimmedTerm.endsWith('/') && trimmedTerm.length > 2) {
+            try {
+                const regexPattern = trimmedTerm.slice(1, -1);
+                const regex = new RegExp(regexPattern, 'i');
+                return entries.filter(entry => {
+                    const name = path.basename(entry.uri.fsPath);
+                    return regex.test(name);
+                });
+            } catch (error) {
+                console.warn('Invalid regex pattern:', error);
+            }
+        }
+        
+        if (trimmedTerm.startsWith('.')) {
+            return entries.filter(entry => {
+                const name = path.basename(entry.uri.fsPath);
+                return name.toLowerCase().endsWith(trimmedTerm.toLowerCase());
+            });
+        }
+        
+        if (trimmedTerm.includes('*') || trimmedTerm.includes('?')) {
+            const regexPattern = trimmedTerm
+                .replace(/\./g, '\\.')
+                .replace(/\*/g, '.*')
+                .replace(/\?/g, '.');
+            try {
+                const regex = new RegExp(`^${regexPattern}$`, 'i');
+                return entries.filter(entry => {
+                    const name = path.basename(entry.uri.fsPath);
+                    return regex.test(name);
+                });
+            } catch (error) {
+                console.warn('Invalid wildcard pattern:', error);
+            }
+        }
+        
+        const lowerSearchTerm = trimmedTerm.toLowerCase();
+        const results: { entry: Entry; score: number }[] = [];
+        
+        for (const entry of entries) {
             const name = path.basename(entry.uri.fsPath).toLowerCase();
+            let score = 0;
             
-            if (name.includes(lowerSearchTerm)) {
-                return true;
+            if (name === lowerSearchTerm) {
+                score = 1000;
             }
-            
-            let searchIndex = 0;
-            for (let i = 0; i < name.length && searchIndex < lowerSearchTerm.length; i++) {
-                if (name[i] === lowerSearchTerm[searchIndex]) {
-                    searchIndex++;
+            else if (name.startsWith(lowerSearchTerm)) {
+                score = 800;
+            }
+            else if (name.includes(lowerSearchTerm)) {
+                score = 600;
+            }
+            else {
+                let searchIndex = 0;
+                let lastMatchIndex = -1;
+                let consecutiveMatches = 0;
+                
+                for (let i = 0; i < name.length && searchIndex < lowerSearchTerm.length; i++) {
+                    if (name[i] === lowerSearchTerm[searchIndex]) {
+                        if (i === lastMatchIndex + 1) {
+                            consecutiveMatches++;
+                        } else {
+                            consecutiveMatches = 1;
+                        }
+                        score += consecutiveMatches * 10;
+                        lastMatchIndex = i;
+                        searchIndex++;
+                    }
                 }
+                
+                if (searchIndex < lowerSearchTerm.length) {
+                    continue;
+                }
+                
+                score += Math.max(0, 100 - name.length);
             }
             
-            return searchIndex === lowerSearchTerm.length;
-        });
+            if (score > 0) {
+                results.push({ entry, score });
+            }
+        }
+        
+        return results
+            .sort((a, b) => b.score - a.score)
+            .map(result => result.entry);
     }
 
     setSearchTerm(searchTerm: string) {

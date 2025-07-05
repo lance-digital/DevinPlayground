@@ -380,9 +380,21 @@ export function activate(context: vscode.ExtensionContext) {
         const searchFilesCommand = vscode.commands.registerCommand('tokenCounter.searchFiles', async () => {
             const currentSearch = provider.getSearchTerm();
             const searchTerm = await vscode.window.showInputBox({
-                prompt: 'ファイル名を検索（ファジー検索対応）',
-                placeHolder: 'ファイル名またはパターンを入力...',
-                value: currentSearch
+                prompt: '高度なファイル検索（正規表現、ワイルドカード、拡張子フィルター対応）',
+                placeHolder: 'ファイル名、/regex/、*.js、.txt など...',
+                value: currentSearch,
+                validateInput: (value) => {
+                    if (!value) return null;
+                    
+                    if (value.startsWith('/') && value.endsWith('/') && value.length > 2) {
+                        try {
+                            new RegExp(value.slice(1, -1), 'i');
+                        } catch (error) {
+                            return '無効な正規表現パターンです';
+                        }
+                    }
+                    return null;
+                }
             });
             if (searchTerm !== undefined) {
                 if (searchTerm.trim() === '') {
@@ -390,7 +402,15 @@ export function activate(context: vscode.ExtensionContext) {
                     vscode.window.showInformationMessage('検索をクリアしました');
                 } else {
                     provider.setSearchTerm(searchTerm);
-                    vscode.window.showInformationMessage(`検索中: ${searchTerm}`);
+                    let searchType = 'ファジー検索';
+                    if (searchTerm.startsWith('/') && searchTerm.endsWith('/')) {
+                        searchType = '正規表現検索';
+                    } else if (searchTerm.startsWith('.')) {
+                        searchType = '拡張子フィルター';
+                    } else if (searchTerm.includes('*') || searchTerm.includes('?')) {
+                        searchType = 'ワイルドカード検索';
+                    }
+                    vscode.window.showInformationMessage(`${searchType}: ${searchTerm}`);
                 }
             }
         });

@@ -310,9 +310,70 @@ export function activate(context: vscode.ExtensionContext) {
         const openWithCommand = vscode.commands.registerCommand('tokenCounter.openWith', async (node: any) => {
             if (!node) return;
             try {
-                await vscode.commands.executeCommand('vscode.openWith', node.uri);
+                const fileExtension = path.extname(node.uri.fsPath).toLowerCase();
+                const fileName = path.basename(node.uri.fsPath);
+                
+                const editorOptions = [
+                    { label: 'テキストエディター', command: 'vscode.open', args: [node.uri] },
+                    { label: 'バイナリエディター', command: 'workbench.action.openLargeFile', args: [node.uri] }
+                ];
+                
+                if (['.js', '.ts', '.jsx', '.tsx'].includes(fileExtension)) {
+                    editorOptions.push(
+                        { label: 'JavaScript/TypeScript エディター', command: 'vscode.open', args: [node.uri] },
+                        { label: 'デバッガーで実行', command: 'workbench.action.debug.start', args: [] }
+                    );
+                } else if (['.json'].includes(fileExtension)) {
+                    editorOptions.push(
+                        { label: 'JSON エディター', command: 'vscode.open', args: [node.uri] },
+                        { label: 'JSON ビューアー', command: 'json.sort', args: [] }
+                    );
+                } else if (['.md', '.markdown'].includes(fileExtension)) {
+                    editorOptions.push(
+                        { label: 'Markdown エディター', command: 'vscode.open', args: [node.uri] },
+                        { label: 'Markdown プレビュー', command: 'markdown.showPreview', args: [node.uri] },
+                        { label: 'Markdown プレビュー (サイド)', command: 'markdown.showPreviewToSide', args: [node.uri] }
+                    );
+                } else if (['.html', '.htm'].includes(fileExtension)) {
+                    editorOptions.push(
+                        { label: 'HTML エディター', command: 'vscode.open', args: [node.uri] },
+                        { label: 'ブラウザーで開く', command: 'simpleBrowser.show', args: [node.uri.toString()] }
+                    );
+                } else if (['.css', '.scss', '.less'].includes(fileExtension)) {
+                    editorOptions.push(
+                        { label: 'CSS エディター', command: 'vscode.open', args: [node.uri] }
+                    );
+                } else if (['.py'].includes(fileExtension)) {
+                    editorOptions.push(
+                        { label: 'Python エディター', command: 'vscode.open', args: [node.uri] },
+                        { label: 'Python で実行', command: 'python.execInTerminal', args: [node.uri] }
+                    );
+                }
+                
+                editorOptions.push(
+                    { label: 'システムの既定のアプリケーション', command: 'revealFileInOS', args: [node.uri] }
+                );
+                
+                const selected = await vscode.window.showQuickPick(editorOptions, {
+                    placeHolder: `"${fileName}" を開く方法を選択してください`,
+                    title: 'アプリケーションで開く'
+                });
+                
+                if (selected) {
+                    try {
+                        if (selected.args && selected.args.length > 0) {
+                            await vscode.commands.executeCommand(selected.command, ...selected.args);
+                        } else {
+                            await vscode.commands.executeCommand(selected.command);
+                        }
+                    } catch (commandError) {
+                        console.warn(`Command ${selected.command} failed:`, commandError);
+                        await vscode.commands.executeCommand('vscode.open', node.uri);
+                    }
+                }
             } catch (error) {
-                vscode.window.showErrorMessage(`Failed to open with: ${error}`);
+                console.error('Open with error:', error);
+                vscode.window.showErrorMessage(`ファイルを開けませんでした: ${error}`);
             }
         });
         context.subscriptions.push(openWithCommand);

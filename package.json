@@ -23,6 +23,13 @@
         }
       ]
     },
+    "viewsWelcome": [
+      {
+        "view": "tokenCounterExplorer",
+        "contents": "ワークスペースにファイルが見つかりません。\n[フォルダを開く](command:vscode.openFolder)\nファイルを開いてトークン数を表示するには、フォルダまたはワークスペースを開いてください。",
+        "when": "workspaceFolderCount == 0"
+      }
+    ],
     "commands": [
       {
         "command": "tokenCounter.refresh",

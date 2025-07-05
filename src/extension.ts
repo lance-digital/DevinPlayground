@@ -220,10 +220,21 @@ export function activate(context: vscode.ExtensionContext) {
         context.subscriptions.push(openInTerminalCommand);
 
         const selectAllCommand = vscode.commands.registerCommand('tokenCounter.selectAll', async () => {
+            if (!vscode.workspace.workspaceFolders) {
+                vscode.window.showWarningMessage('ワークスペースが開かれていません');
+                return;
+            }
+            
             try {
-                await vscode.commands.executeCommand('list.selectAll');
+                const workspaceRoot = vscode.workspace.workspaceFolders[0].uri;
+                const entries = await provider.readDirectory(workspaceRoot);
+                const allPaths = entries.map(([name, type]) => vscode.Uri.joinPath(workspaceRoot, name).fsPath);
+                
+                await provider.selectMultiple(allPaths, false);
+                provider.refresh(); // Refresh to show selection state
+                vscode.window.showInformationMessage(`${allPaths.length}個のアイテムを選択しました`);
             } catch (error) {
-                vscode.window.showErrorMessage(`Failed to select all: ${error}`);
+                vscode.window.showErrorMessage(`全選択に失敗しました: ${error}`);
             }
         });
         context.subscriptions.push(selectAllCommand);

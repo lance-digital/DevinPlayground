@@ -340,20 +340,164 @@ export function activate(context: vscode.ExtensionContext) {
             try {
                 const stat = await vscode.workspace.fs.stat(node.uri);
                 const size = stat.size;
-                const created = new Date(stat.ctime).toLocaleString();
-                const modified = new Date(stat.mtime).toLocaleString();
-                const type = stat.type === vscode.FileType.Directory ? 'Folder' : 'File';
+                const created = new Date(stat.ctime).toLocaleString('ja-JP');
+                const modified = new Date(stat.mtime).toLocaleString('ja-JP');
+                const type = stat.type === vscode.FileType.Directory ? 'フォルダ' : 'ファイル';
+                const basename = path.basename(node.uri.fsPath);
+                const extension = path.extname(node.uri.fsPath);
+                const dirname = path.dirname(node.uri.fsPath);
+                const tokenCount = await provider.getTokenCountPublic(node.uri, stat.type);
                 
-                const message = `Properties for ${path.basename(node.uri.fsPath)}:\n\n` +
-                    `Type: ${type}\n` +
-                    `Size: ${size} bytes\n` +
-                    `Created: ${created}\n` +
-                    `Modified: ${modified}\n` +
-                    `Path: ${node.uri.fsPath}`;
+                const panel = vscode.window.createWebviewPanel(
+                    'fileProperties',
+                    `プロパティ: ${basename}`,
+                    vscode.ViewColumn.Two,
+                    {
+                        enableScripts: true,
+                        retainContextWhenHidden: true
+                    }
+                );
                 
-                vscode.window.showInformationMessage(message, { modal: true });
+                panel.webview.html = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>ファイルプロパティ</title>
+                        <style>
+                            body {
+                                font-family: var(--vscode-font-family);
+                                font-size: var(--vscode-font-size);
+                                color: var(--vscode-foreground);
+                                background-color: var(--vscode-editor-background);
+                                padding: 20px;
+                                line-height: 1.6;
+                            }
+                            .property-group {
+                                margin-bottom: 20px;
+                                border: 1px solid var(--vscode-panel-border);
+                                border-radius: 4px;
+                                padding: 15px;
+                            }
+                            .property-group h3 {
+                                margin-top: 0;
+                                color: var(--vscode-textLink-foreground);
+                                border-bottom: 1px solid var(--vscode-panel-border);
+                                padding-bottom: 5px;
+                            }
+                            .property-row {
+                                display: flex;
+                                justify-content: space-between;
+                                margin: 8px 0;
+                                padding: 4px 0;
+                            }
+                            .property-label {
+                                font-weight: bold;
+                                color: var(--vscode-textPreformat-foreground);
+                                min-width: 120px;
+                            }
+                            .property-value {
+                                color: var(--vscode-foreground);
+                                word-break: break-all;
+                                text-align: right;
+                                flex: 1;
+                                margin-left: 10px;
+                            }
+                            .file-icon {
+                                font-size: 48px;
+                                text-align: center;
+                                margin-bottom: 15px;
+                                color: var(--vscode-textLink-foreground);
+                            }
+                            .copy-button {
+                                background-color: var(--vscode-button-background);
+                                color: var(--vscode-button-foreground);
+                                border: none;
+                                padding: 4px 8px;
+                                border-radius: 2px;
+                                cursor: pointer;
+                                font-size: 12px;
+                                margin-left: 5px;
+                            }
+                            .copy-button:hover {
+                                background-color: var(--vscode-button-hoverBackground);
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="file-icon">${stat.type === vscode.FileType.Directory ? '📁' : '📄'}</div>
+                        
+                        <div class="property-group">
+                            <h3>基本情報</h3>
+                            <div class="property-row">
+                                <span class="property-label">名前:</span>
+                                <span class="property-value">${basename}</span>
+                            </div>
+                            <div class="property-row">
+                                <span class="property-label">種類:</span>
+                                <span class="property-value">${type}</span>
+                            </div>
+                            ${stat.type !== vscode.FileType.Directory ? `
+                            <div class="property-row">
+                                <span class="property-label">拡張子:</span>
+                                <span class="property-value">${extension || 'なし'}</span>
+                            </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="property-group">
+                            <h3>場所</h3>
+                            <div class="property-row">
+                                <span class="property-label">フルパス:</span>
+                                <span class="property-value">${node.uri.fsPath}
+                                    <button class="copy-button" onclick="copyToClipboard('${node.uri.fsPath}')">コピー</button>
+                                </span>
+                            </div>
+                            <div class="property-row">
+                                <span class="property-label">ディレクトリ:</span>
+                                <span class="property-value">${dirname}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="property-group">
+                            <h3>サイズとトークン</h3>
+                            <div class="property-row">
+                                <span class="property-label">サイズ:</span>
+                                <span class="property-value">${provider.formatFileSizePublic(size)} (${size.toLocaleString()} バイト)</span>
+                            </div>
+                            <div class="property-row">
+                                <span class="property-label">トークン数:</span>
+                                <span class="property-value">${tokenCount.toLocaleString()}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="property-group">
+                            <h3>日時</h3>
+                            <div class="property-row">
+                                <span class="property-label">作成日時:</span>
+                                <span class="property-value">${created}</span>
+                            </div>
+                            <div class="property-row">
+                                <span class="property-label">更新日時:</span>
+                                <span class="property-value">${modified}</span>
+                            </div>
+                        </div>
+                        
+                        <script>
+                            function copyToClipboard(text) {
+                                navigator.clipboard.writeText(text).then(() => {
+                                    console.log('Path copied to clipboard');
+                                }).catch(err => {
+                                    console.error('Failed to copy: ', err);
+                                });
+                            }
+                        </script>
+                    </body>
+                    </html>
+                `;
             } catch (error) {
-                vscode.window.showErrorMessage(`Failed to show properties: ${error}`);
+                vscode.window.showErrorMessage(`プロパティ表示エラー: ${error}`);
             }
         });
         context.subscriptions.push(showPropertiesCommand);

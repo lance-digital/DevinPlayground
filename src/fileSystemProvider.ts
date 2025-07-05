@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as cp from 'child_process';
 
 interface Entry {
     uri: vscode.Uri;
@@ -8,9 +9,12 @@ interface Entry {
     tokenCount?: number;
 }
 
-export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<Entry>, vscode.FileSystemProvider {
+export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<Entry>, vscode.FileSystemProvider, vscode.TreeDragAndDropController<Entry> {
     private _onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
     private _onDidChangeTreeData = new vscode.EventEmitter<Entry | Entry[] | undefined | null | void>();
+    
+    readonly dragMimeTypes = ['application/vnd.code.tree.tokenCounterExplorer'];
+    readonly dropMimeTypes = ['application/vnd.code.tree.tokenCounterExplorer'];
     private cache: { [filePath: string]: { tokenCount: number; lastModified: number } } = {};
     private gitignorePatterns: string[] = [];
 
@@ -194,6 +198,7 @@ export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<E
         
         treeItem.resourceUri = element.uri;
         treeItem.tooltip = element.tokenCount ? `${element.tokenCount.toLocaleString()} ${tokenSuffix}` : undefined;
+        treeItem.contextValue = element.type === vscode.FileType.Directory ? 'folder' : 'file';
         
         if (element.type === vscode.FileType.File) {
             treeItem.command = {
@@ -363,5 +368,46 @@ export class TokenCounterFileSystemProvider implements vscode.TreeDataProvider<E
         console.log('🔄 [FILESYSTEM] Refreshing tree data');
         this.cache = {};
         this._onDidChangeTreeData.fire(undefined);
+    }
+
+    async handleDrag(source: Entry[], treeDataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
+        const dragData = source.map(entry => ({
+            uri: entry.uri.toString(),
+            type: entry.type
+        }));
+        treeDataTransfer.set('application/vnd.code.tree.tokenCounterExplorer', new vscode.DataTransferItem(dragData));
+    }
+
+    async handleDrop(target: Entry | undefined, sources: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
+        const transferItem = sources.get('application/vnd.code.tree.tokenCounterExplorer');
+        if (!transferItem) {
+            return;
+        }
+
+        const dragData = transferItem.value;
+        if (!Array.isArray(dragData)) {
+            return;
+        }
+
+        const targetUri = target ? target.uri : vscode.workspace.workspaceFolders?.[0]?.uri;
+        if (!targetUri) {
+            return;
+        }
+
+        for (const item of dragData) {
+            try {
+                const sourceUri = vscode.Uri.parse(item.uri);
+                const sourceName = path.basename(sourceUri.fsPath);
+                const destinationUri = vscode.Uri.joinPath(targetUri, sourceName);
+                
+                await vscode.workspace.fs.rename(sourceUri, destinationUri, { overwrite: false });
+                console.log(`✅ [DRAG_DROP] Moved ${sourceUri.fsPath} to ${destinationUri.fsPath}`);
+            } catch (error) {
+                console.error(`❌ [DRAG_DROP] Failed to move file:`, error);
+                vscode.window.showErrorMessage(`Failed to move file: ${error}`);
+            }
+        }
+
+        this.refresh();
     }
 }

@@ -28,8 +28,69 @@
         "command": "tokenCounter.refresh",
         "title": "Refresh Token Counts",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "tokenCounter.newFile",
+        "title": "New File",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "tokenCounter.newFolder",
+        "title": "New Folder",
+        "icon": "$(new-folder)"
+      },
+      {
+        "command": "tokenCounter.rename",
+        "title": "Rename",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "tokenCounter.delete",
+        "title": "Delete",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "tokenCounter.copy",
+        "title": "Copy Path",
+        "icon": "$(copy)"
       }
     ],
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "tokenCounter.newFile",
+          "when": "view == tokenCounterExplorer && viewItem == folder",
+          "group": "1_new@1"
+        },
+        {
+          "command": "tokenCounter.newFolder",
+          "when": "view == tokenCounterExplorer && viewItem == folder",
+          "group": "1_new@2"
+        },
+        {
+          "command": "tokenCounter.rename",
+          "when": "view == tokenCounterExplorer",
+          "group": "2_edit@1"
+        },
+        {
+          "command": "tokenCounter.delete",
+          "when": "view == tokenCounterExplorer",
+          "group": "2_edit@2"
+        },
+        {
+          "command": "tokenCounter.copy",
+          "when": "view == tokenCounterExplorer",
+          "group": "3_copy@1"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "tokenCounter.refresh",
+          "when": "view == tokenCounterExplorer",
+          "group": "navigation"
+        }
+      ]
+    },
     "configuration": {
       "title": "Token Counter",
       "properties": {
